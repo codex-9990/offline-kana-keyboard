@@ -24,14 +24,18 @@ public final class EditorSelection {
     }
     private final ArrayDeque<Write> expected=new ArrayDeque<>();
     private int start,end,spanStart=-1,spanEnd=-1,length,reportedStart,reportedEnd;
-    private boolean active,missing;
+    private boolean active,missing,retiredAmbiguity,anchorBlocked;
     public EditorSelection(int start,int end) { select(start,end); }
     public void select(int first,int last) {
+        // Only an explicit trusted selection (new EditorInfo/adapter) clears the fence.
+        if (first>=0 && last>=0) { retiredAmbiguity=false; anchorBlocked=false; }
         expected.clear(); start=reportedStart=first; end=reportedEnd=last; finish();
     }
     public Write expect(int length,boolean composing) {
         Write write=new Write(this,length,composing); expected.add(write);
-        while (expected.size()>MAX_EXPECTED) expected.remove();
+        while (expected.size()>MAX_EXPECTED) {
+            expected.remove(); retiredAmbiguity=true; // Lost operation ordering must not become a trusted anchor.
+        }
         return write;
     }
     public void reject(Write write) {
@@ -43,9 +47,10 @@ public final class EditorSelection {
     public boolean hasSelection() { return start>=0 && end>=0 && start!=end; }
     public boolean recoverRegion() {
         // A successful request is not proof that the host retained its composing span.
-        return active && (missing || !expected.isEmpty()) && spanStart>=0 && spanEnd>=spanStart;
+        return !anchorBlocked && active && (missing || !expected.isEmpty()) && spanStart>=0 && spanEnd>=spanStart;
     }
     public boolean unknownMissingRegion() { return active && (missing || !expected.isEmpty()) && spanStart<0; }
+    public boolean anchorBlocked() { return anchorBlocked; }
     public int spanStart() { return spanStart; }
     public int spanEnd() { return spanEnd; }
     public int pendingMetadataCount() { return expected.size(); }
@@ -53,11 +58,31 @@ public final class EditorSelection {
         // Consume the ordered prefix, including updates coalesced into this acknowledgement.
         while (!expected.isEmpty()) if (expected.remove()==write) break;
     }
-    /** Returns true only for an unaccounted-for actual cursor/selection move. */
+    private boolean pendingReversal() {
+        int direction=0;
+        for (Write write:expected) {
+            if (write.oldStart<0 || write.oldStart!=write.oldEnd || write.newPosition<0) continue;
+            int next=Integer.compare(write.newPosition,write.oldStart);
+            if (next!=0) {
+                if (direction!=0 && direction!=next) return true;
+                direction=next;
+            }
+        }
+        return false;
+    }
+    private boolean observedSelection(int first,int last,boolean ambiguous) {
+        boolean outside=active;
+        anchorBlocked|=ambiguous;
+        expected.clear(); reportedStart=first; reportedEnd=last;
+        start=anchorBlocked ? -1 : first; end=anchorBlocked ? -1 : last;
+        finish(); return outside;
+    }
+    /** True when composition must end: an external move or an ambiguous update. */
     public boolean update(int oldStart,int oldEnd,int newStart,int newEnd,int candidatesStart,int candidatesEnd) {
         if (newStart<0 || newEnd<0) return false; // Absence of metadata is not evidence of a cursor move.
         boolean range=candidatesStart>=0 && candidatesEnd>=candidatesStart;
         boolean current=newStart==start && newEnd==end;
+        boolean reversed=pendingReversal();
         Write acknowledged=null;
         boolean earlierOld=false;
         for (Write write:expected) {
@@ -65,15 +90,24 @@ public final class EditorSelection {
             if (newStart==newEnd && newStart==write.newPosition
                     && (current || earlierOld || oldStart==reportedStart && oldEnd==reportedEnd)
                     && (!range || candidatesStart==write.spanStart && candidatesEnd==write.spanEnd)) {
-                // The earliest matching operation may share a cursor with a later
-                // preview/cancel operation. Do not acknowledge that later write early.
-                if (acknowledged==null) acknowledged=write;
+                // Current coordinates can coalesce the entire return-to-position path.
+                // Never leave earlier positions eligible after that acknowledgement.
+                if (acknowledged==null || current) acknowledged=write;
             }
         }
         if (current && active && range && acknowledged==null && (candidatesStart!=spanStart || candidatesEnd!=spanEnd)) {
-            select(newStart,newEnd); return true;
+            return observedSelection(newStart,newEnd,reversed || retiredAmbiguity);
+        }
+        if (!current && (reversed || retiredAmbiguity)) {
+            // Metadata has no operation ID: a delayed preview update and a real
+            // cursor move can be identical. Preserve text, end composition, and
+            // fence region guesses until a fresh trusted editor selection.
+            if (!range && newStart==oldStart && newEnd==oldEnd
+                    && newStart==reportedStart && newEnd==reportedEnd) return false;
+            return observedSelection(newStart,newEnd,true);
         }
         if (acknowledged!=null || current) {
+            if (current && acknowledged!=null) retiredAmbiguity|=reversed;
             if (acknowledged!=null) acknowledge(acknowledged);
             reportedStart=newStart; reportedEnd=newEnd;
             // A delayed acknowledgement must not replace our latest predicted cursor/span.
@@ -100,7 +134,6 @@ public final class EditorSelection {
             // Never guess a replacement range when callbacks provide no trustworthy anchor.
             if (!range) { missing=true; return false; }
         }
-        boolean outside=active;
-        select(newStart,newEnd); return outside;
+        return observedSelection(newStart,newEnd,false);
     }
 }

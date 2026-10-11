@@ -347,7 +347,8 @@ public final class KotoImeService extends InputMethodService {
         String learningLabel=learnedState.busy ? "学習データ処理中" : learnedState.failed ? "保存エラー · 学習停止"
                 : session.incognito() || !session.policy().learning ? "私用 · 学習 OFF"
                 : learnedState.days==0 ? "学習 OFF" : "端末内学習 " + learnedState.days + "日";
-        status.setText(editor!=null && editor.compositionRejected() ? "Koto · 入力欄が未確定入力を受け付けません"
+        status.setText(editor!=null && editor.compositionNeedsRestart() ? "Koto · 変換停止 · 入力欄を切り替えて再開してください"
+            : editor!=null && editor.compositionRejected() ? "Koto · 入力欄が未確定入力を受け付けません"
             : session.policy().password ? "Koto · パスワード · 候補 OFF"
             : session.policy().noPersonalizedLearning ? "Koto · プライベート入力 · 学習 OFF"
             : !session.policy().candidates ? "Koto · 直接入力 · 候補 OFF"

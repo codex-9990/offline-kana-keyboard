@@ -41,6 +41,7 @@ public final class ConnectionEditor implements InputSession.Editor {
     public boolean updateSelection(InputSession session,int oldStart,int oldEnd,int newStart,int newEnd,int start,int end) {
         boolean outside=selections.update(oldStart,oldEnd,newStart,newEnd,start,end);
         selectionActive=selections.hasSelection();
+        if (selections.anchorBlocked()) compositionRejected=true;
         if (!session.text().isEmpty() && outside) {
             session.selectionMovedOutsideComposition(); return true;
         }
@@ -48,6 +49,7 @@ public final class ConnectionEditor implements InputSession.Editor {
     }
     public EditorAction action() { return action; }
     public boolean compositionRejected() { return compositionRejected; }
+    public boolean compositionNeedsRestart() { return selections.anchorBlocked(); }
     @Override public boolean composing(String value) {
         return write(value,true);
     }
@@ -56,6 +58,7 @@ public final class ConnectionEditor implements InputSession.Editor {
     }
     private boolean write(String value,boolean composing) {
         if (connection==null) { compositionRejected=composing; return false; }
+        if (composing && selections.anchorBlocked()) { compositionRejected=true; return false; }
         boolean recover=selections.recoverRegion();
         if (selections.unknownMissingRegion()) { compositionRejected=true; return false; }
         boolean batch=false;
