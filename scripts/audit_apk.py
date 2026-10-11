@@ -96,6 +96,12 @@ with zipfile.ZipFile(APK) as archive:
     (evidence / "dex-strings.txt").write_text("\n".join(strings))
     for name, condition in help_checks(strings):
         check("packaged " + name, condition)
+    check("packaged manual-conversion gate and restricted-field guidance", all(value in strings for value in (
+        "Ldev/local/koto/core/CandidateList;", "conversionRequested", "requestConversion", "allowsPhrases",
+        "Koto · 手動辞書変換 · 自動候補 OFF · 学習 OFF",
+        "自動候補 OFF · 読みを入力して「変換」 · 学習 OFF",
+        "英字優先 · 日本語は「かな」→読み→「変換」 · 学習 OFF",
+        "数字・電話・日時は直接入力 · 辞書変換・学習 OFF")))
     forbidden = ("Ljava/net/", "Landroid/webkit/", "Landroid/speech/", "Landroid/content/ClipboardManager;",
                  "Landroid/util/Log;", "Lcom/google/firebase/", "Lokhttp", "Lretrofit", "Lio/sentry/",
                  "CoreTests", "FeatureTests", "ConnectionEditorHostTests", "CompositionCallbackHostTests", "LocalPreeditHostTests", "ImeSmokeInstrumentation", "SyntheticOnly42")

@@ -181,12 +181,73 @@ public final class LocalPreeditHostTests {
             h.session.discard();h.session.start(h.editor,FieldPolicy.from(1,0));eq("",h.session.text());eq("",h.text);
             yes(h.session.type("新"));yes(h.session.confirm());eq("新",h.text);
         });
-        test("password and no-suggestions fields have no local draft preview or learning",()->{
-            for(int type:new int[]{0x81,0x91,0xe1,0x12,0x80001,2,3,4}) {
+        test("password nontext and unknown fields have no local draft preview conversion or learning",()->{
+            for(int type:new int[]{0x81,0x91,0xe1,0x12,2,3,4,0,5,15,0xf1,0xff1}) {
                 Host h=new Host(type,0,"",false);h.session.mode(InputSession.Mode.KANA);
                 yes(h.session.type("に"));yes(h.session.type("ほ"));yes(h.session.type("ん"));h.flush();
                 eq("にほん",h.text);eq("",h.session.text());eq("",h.session.preview());yes(!h.session.hasCandidates());yes(h.learned.isEmpty());eq(3,h.commits);
+                yes(!h.session.requestConversion());yes(!h.session.preedit(true).visible);
             }
+        });
+        test("NO_SUGGESTIONS body and web body convert on first explicit request without personalized learning",()->{
+            for(int type:new int[]{0x80001,0x800a1}) for(int flags:new int[]{0,EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING}) {
+                Host h=new Host(type,flags,"prefix:",false);h.kana(4,1);h.kana(5,4);h.kana(10,2);
+                eq("にほん",h.session.text());eq("prefix:",h.text);yes(!h.session.hasCandidates());
+                yes(!h.session.preview("日本",h.session.revision()));yes(!h.session.select("日本",h.session.revision()));
+                yes(h.session.requestConversion());yes(h.session.hasCandidates());
+                yes(dictionary.candidates(h.session.text()).contains("日本"));yes(h.session.preview("日本",h.session.revision()));
+                eq("prefix:",h.text);yes(h.session.confirm());eq("prefix:日本",h.text);h.coalesce(true);
+                yes(h.session.type("ご"));yes(!h.session.hasCandidates());yes(h.session.confirm());eq("prefix:日本ご",h.text);
+                eq(2,h.commits);yes(h.learned.isEmpty());
+            }
+        });
+        test("ordinary web notepad URL and FORCE_ASCII combinations keep field-dependent policies",()->{
+            for(int type:new int[]{1,0xa1,0x11,0x21,0xd1}) for(int noSuggestions:new int[]{0,0x80000})
+                for(int flags:new int[]{0,0x1000000,0x80000000,0x81000000}) {
+                    Host h=new Host(type|noSuggestions,flags,"",false);
+                    boolean ascii=type==0x11 || type==0x21 || type==0xd1 || (flags&0x80000000)!=0;
+                    eq(ascii ? InputSession.Mode.ENGLISH : InputSession.Mode.KANA,h.session.mode());
+                    h.session.mode(InputSession.Mode.ENGLISH);yes(h.session.type("https://x.example/a?b=1"));yes(h.session.confirm());
+                    h.session.mode(InputSession.Mode.KANA);yes(h.session.type("にほん"));
+                    eq(!(ascii || noSuggestions!=0),h.session.hasCandidates());yes(h.session.requestConversion());
+                    yes(h.session.select("日本",h.session.revision()));eq("https://x.example/a?b=1日本",h.text);
+                    if(ascii || noSuggestions!=0 || (flags&0x1000000)!=0)yes(h.learned.isEmpty());
+                }
+        });
+        test("manual field rejected confirmation no span support and capacity never lock out local editing",()->{
+            Host h=new Host(0x80011,0x81000000,"old",false);h.session.mode(InputSession.Mode.KANA);h.session.type("にほん");
+            h.session.requestConversion();h.session.preview("日本",h.session.revision());h.accept=false;yes(!h.session.confirm());
+            eq("日本",h.session.preview());yes(h.session.type("ご"));eq("にほんご",h.session.text());yes(!h.session.hasCandidates());
+            h.session.backspace();h.session.requestConversion();h.accept=true;h.finishSupported=false;yes(!h.session.confirm());
+            yes(h.session.cancelPreview());h.finishSupported=true;yes(h.session.confirm());eq("oldにほん",h.text);
+            for(int i=0;i<256;i++)yes(h.session.type("あ"));yes(!h.session.type("い"));h.session.backspace();yes(h.session.type("い"));
+            yes(h.session.confirm());yes(h.session.type("う"));yes(h.session.confirm());eq(3,h.commits);yes(h.learned.isEmpty());
+        });
+        test("explicit request lifecycle clears on focus hide restart and preserves same-session relayout only",()->{
+            Host h=new Host(0x80001,0,"",false);h.session.type("にほん");h.session.requestConversion();h.session.preview("日本",h.session.revision());
+            long old=h.session.revision();h.session.relayout();yes(h.session.hasCandidates());eq("日本",h.session.preview());
+            yes(!h.session.select("wrong",old));h.session.discard();yes(!h.session.conversionRequested());eq("",h.text);
+            h.session.type("にほん");h.session.requestConversion();old=h.session.revision();
+            Host next=new Host(0x800a1,0,"",false);h.session.start(next.editor,FieldPolicy.from(0x800a1,0));h.session.type("にほん");
+            h.editor.updateSelection(0,0,2,2,-1,-1);yes(!h.session.hasCandidates());yes(!h.session.select("日本",old));eq("",next.text);
+            yes(h.session.requestConversion());yes(h.session.select("日本",h.session.revision()));eq("日本",next.text);
+            h.session.finish();yes(!h.session.conversionRequested());yes(!h.session.type("ignored"));
+        });
+        test("two thousand manual conversion cycles account for all accepted keys and confirmations with no history",()->{
+            int accepted=0,confirmations=0;
+            for(int flags:new int[]{0,0x1000000}) {
+                Host h=new Host(0x800a1,flags,"",false);StringBuilder expected=new StringBuilder();
+                for(int i=0;i<1000;i++) {
+                    for(String key:new String[]{"に","ほ","ん"}){yes(h.session.type(key));accepted++;}
+                    yes(!h.session.hasCandidates());yes(h.session.requestConversion());yes(h.session.preview("日本",h.session.revision()));
+                    yes(h.session.confirm());confirmations++;expected.append("日本");yes(h.session.type("ご"));accepted++;
+                    if(i%3==0)h.flush();else if(i%3==1)h.coalesce(true);
+                    eq("ご",h.session.text());yes(!h.session.hasCandidates());yes(h.session.confirm());confirmations++;expected.append("ご");
+                }
+                h.flush();eq(expected.toString(),h.text);eq(2000,h.commits);yes(h.learned.isEmpty());
+            }
+            eq(8000,accepted);eq(4000,confirmations);
+            System.out.println("PASS: 2000 explicit-only cycles; 8000 accepted keys; 4000 exact confirmations; no learned records");
         });
         test("no personalized learning and manual private mode retain continuous static conversion without records",()->{
             for(boolean manual:new boolean[]{false,true}) {
@@ -253,6 +314,49 @@ public final class LocalPreeditHostTests {
             }
             eq(59048,sequences);yes(accepted>0);yes(confirmations>0);
             System.out.println("PASS: 59048 bounded sequences (depth 0-4; typed keys/local preview/cancel/delete/cursor/confirm/ordered/two coalescing forms; no ignored accepted keys or lockout allowed)");
+        });
+        test("manual conversion bounded oracle requires an explicit request and accounts for every accepted input",()->{
+            char[] alphabet={'T','R','P','C','D','A','X','F','M','N'};int sequences=0,accepted=0,confirmations=0;
+            for(int flags:new int[]{0,0x1000000})for(int length=0,power=1;length<=4;length++,power*=alphabet.length)
+                for(int code=0;code<power;code++)for(int options=0;options<8;options++) {
+                    StringBuilder trace=new StringBuilder();int encoding=code;
+                    for(int i=0;i<length;i++,encoding/=alphabet.length)trace.append(alphabet[encoding%alphabet.length]);
+                    try {
+                        Host h=new Host(0x800a1,flags,"prefix:seed",false);h.omitRange=(options&1)!=0;
+                        if((options&2)!=0){h.spanStart=7;h.spanEnd=11;}
+                        String draft="にほん",preview="",expected=h.text;boolean requested=false;yes(h.session.type(draft));int commits=0;
+                        for(int step=0;step<length;step++) {
+                            char op=trace.charAt(step);int first=h.cursor,last=h.end;
+                            if(op=='T'){yes(h.session.type("ご"));accepted++;draft+="ご";preview="";requested=false;}
+                            else if(op=='R'){eq(!draft.isEmpty(),h.session.requestConversion());requested=!draft.isEmpty();}
+                            else if(op=='P'){
+                                boolean allowed=requested && !draft.isEmpty();eq(allowed,h.session.preview("日本",h.session.revision()));if(allowed)preview="日本";
+                            } else if(op=='C'){yes(h.session.cancelPreview());preview="";}
+                            else if(op=='D') {
+                                h.session.backspace();if(!preview.isEmpty())preview="";
+                                else {requested=false;
+                                    if(!draft.isEmpty())draft=draft.substring(0,draft.offsetByCodePoints(draft.length(),-1));
+                                    else {int a=Math.min(first,last),b=Math.max(first,last);if(a==b && a>0)a=expected.offsetByCodePoints(a,-1);expected=insert(expected,a,b,"");}
+                                }
+                            } else if(op=='A')h.session.cursor(-1);
+                            else if(op=='X') {
+                                if(!draft.isEmpty()){yes(h.session.confirm());expected=insert(expected,first,last,preview.isEmpty()?draft:preview);draft="";preview="";requested=false;commits++;confirmations++;}
+                                else yes(!h.session.confirm());
+                            } else if(op=='F')h.flush();else h.coalesce(op=='N');
+                            if((options&4)!=0)h.flush();
+                            eq(draft,h.session.text());eq(preview,h.session.preview());eq(requested,h.session.conversionRequested());
+                            eq(requested && !draft.isEmpty(),h.session.hasCandidates());eq(expected,h.text);eq(commits,h.commits);yes(h.learned.isEmpty());
+                        }
+                        if(!draft.isEmpty()) {
+                            int first=h.cursor,last=h.end;yes(h.session.confirm());expected=insert(expected,first,last,preview.isEmpty()?draft:preview);commits++;
+                        }
+                        h.flush();eq(expected,h.text);eq(commits,h.commits);eq("",h.session.text());yes(!h.session.conversionRequested());
+                        yes(h.session.type("続"));int first=h.cursor,last=h.end;h.coalesce(true);eq("続",h.session.text());yes(!h.session.hasCandidates());
+                        yes(h.session.confirm());eq(insert(expected,first,last,"続"),h.text);eq(commits+1,h.commits);yes(h.learned.isEmpty());sequences++;
+                    } catch(AssertionError failure){throw new AssertionError("Manual sequence="+trace+" options="+options+" flags="+flags,failure);}
+                }
+            eq(177776,sequences);yes(accepted>0);yes(confirmations>0);
+            System.out.println("PASS: 177776 explicit-only bounded sequences (depth 0-4; request/typed keys/local preview/cancel/delete/cursor/confirm/ordered/two coalescing forms; NO_PERSONALIZED_LEARNING both states)");
         });
         System.out.println("PASS: "+count+" local-preedit Android API host groups; native Android Binder/Looper/View/S24 NOT RUN");
     }

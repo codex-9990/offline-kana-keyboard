@@ -15,4 +15,5 @@ fi
 "$javac_bin" --release 8 -encoding UTF-8 -d .build-cache/host-tests "${java_sources[@]}"
 "$java_bin" -ea -cp .build-cache/host-tests dev.local.koto.core.CoreTests app/src/main/assets/skk.tsv
 "$java_bin" -ea -cp .build-cache/host-tests dev.local.koto.core.FeatureTests app/src/main/assets/skk.tsv
+python3 scripts/test_policy_guards.py
 python3 scripts/audit_source.py

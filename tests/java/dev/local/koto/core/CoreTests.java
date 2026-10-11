@@ -85,13 +85,71 @@ public final class CoreTests {
             yes(s.policy().noPersonalizedLearning); s.type("にほん"); yes(s.hasCandidates());
             s.finish(); eq("",s.text());
         });
-        test("numeric, phone, date, and NO_SUGGESTIONS policy", () -> {
+        test("numeric phone date null and unknown fields stay direct", () -> {
             for (int type : new int[]{2,3,4}) {
                 Editor e = new Editor(); InputSession s = start(e,type,0);
                 yes(s.policy().numeric); eq(InputSession.Mode.SYMBOLS,s.mode()); s.type("123"); no(s.hasCandidates());
             }
-            Editor e = new Editor(); InputSession s = start(e,0x80001,0);
-            s.type("かな"); eq("かな",e.committed); no(s.hasCandidates()); eq("",s.text());
+            for(int type:new int[]{0,5,15,0xf1,0xff1}) {
+                Editor e=new Editor(); InputSession s=start(e,type,0); yes(s.type("かな"));
+                eq("かな",e.committed); no(s.hasCandidates()); no(s.requestConversion()); eq("",s.text());
+            }
+        });
+        test("NO_SUGGESTIONS body and web body accept local text but require explicit conversion",()->{
+            for(int type:new int[]{0x80001,0x800a1}) for(int flags:new int[]{0,0x1000000}) {
+                Editor e=new Editor(); InputSession s=start(e,type,flags);
+                yes(s.policy().noSuggestions); yes(s.policy().candidates); yes(s.policy().explicitConversion); no(s.policy().learning);
+                yes(s.type("にほん")); eq("にほん",s.text()); eq("",e.committed); no(s.hasCandidates());
+                no(s.preview("日本",s.revision())); no(s.select("日本",s.revision()));
+                yes(s.preedit(true).visible); eq("にほん",s.preedit(true).text);
+                yes(s.requestConversion()); yes(s.hasCandidates()); yes(s.preview("日本",s.revision()));
+                eq("",e.committed); yes(s.confirm()); eq("日本",e.committed); no(s.conversionRequested());
+            }
+        });
+        test("URI email and FORCE_ASCII keep ASCII access and explicit manual kana conversion",()->{
+            for(int variation:new int[]{1,0xa1,0x11,0x21,0xd1}) for(int noSuggestions:new int[]{0,0x80000})
+                for(int flags:new int[]{0,0x1000000,0x80000000,0x81000000}) {
+                    Editor e=new Editor(); InputSession s=start(e,variation|noSuggestions,flags);
+                    boolean ascii=variation==0x11 || variation==0x21 || variation==0xd1 || (flags&0x80000000)!=0;
+                    boolean manual=ascii || noSuggestions!=0;
+                    eq(ascii ? InputSession.Mode.ENGLISH : InputSession.Mode.KANA,s.mode());
+                    eq(manual,s.policy().explicitConversion); if(manual)no(s.policy().learning);
+                    yes(s.type("a")); eq("",e.committed); yes(s.confirm()); eq("a",e.committed);
+                    s.mode(InputSession.Mode.KANA); yes(s.type("にほん")); eq(!manual,s.hasCandidates());
+                    yes(s.requestConversion()); yes(s.preview("日本",s.revision())); yes(s.confirm()); eq("a日本",e.committed);
+                }
+        });
+        test("editing closes explicit candidates while unchanged-reading navigation and relayout preserve them",()->{
+            Editor e=new Editor(); InputSession s=start(e,0x80001,0); s.type("にほん"); s.requestConversion();
+            yes(s.preview("日本",s.revision())); long old=s.revision(); s.cursor(-1); s.relayout();
+            yes(s.conversionRequested()); eq("日本",s.preview()); no(s.select("wrong",old));
+            s.backspace(); eq("にほん",s.text()); yes(s.hasCandidates()); s.backspace(); eq("にほ",s.text()); no(s.hasCandidates());
+            s.requestConversion(); s.modify(); eq("にぼ",s.text()); no(s.hasCandidates());
+            s.requestConversion(); s.space(); no(s.hasCandidates()); s.requestConversion();
+            s.mode(InputSession.Mode.ENGLISH); eq("にぼ ",s.text()); no(s.conversionRequested());
+            s.mode(InputSession.Mode.KANA); no(s.hasCandidates()); s.requestConversion(); s.incognito(true); no(s.hasCandidates());
+            s.requestConversion(); s.discard(); no(s.conversionRequested()); eq("",e.committed);
+        });
+        test("explicit conversion never relaxes any password nontext or unknown restriction",()->{
+            for(int type:new int[]{0x81,0x91,0xe1,0x12,2,3,4,0,5,15,0xf1,0xff1})
+                for(int noSuggestions:new int[]{0,0x80000}) for(int flags:new int[]{0,0x1000000,0x80000000,0x81000000}) {
+                    Editor e=new Editor(); InputSession s=start(e,type|noSuggestions,flags); s.mode(InputSession.Mode.KANA);
+                    yes(s.type("かな")); eq("かな",e.committed); eq("",s.text()); no(s.policy().learning);
+                    no(s.policy().candidates); no(s.requestConversion()); no(s.hasCandidates()); no(s.preedit(true).visible);
+                }
+        });
+        test("rejected manual Unicode confirmation retains draft and permits editing and retry",()->{
+            Editor e=new Editor(); InputSession s=start(e,0x80011,0x80000000); s.mode(InputSession.Mode.KANA); s.type("にほん");
+            s.requestConversion(); s.preview("日本",s.revision()); e.accepting=false; no(s.confirm());
+            eq("日本",s.preview()); yes(s.hasCandidates()); yes(s.type("ご")); no(s.hasCandidates()); eq("にほんご",s.text());
+            s.backspace(); s.requestConversion(); e.accepting=true; yes(s.select("日本",s.revision())); eq("日本",e.committed);
+        });
+        test("manual conversion capacity rejection preserves requested preview until an actual edit",()->{
+            Editor e=new Editor(); InputSession s=start(e,0x80001,0);
+            yes(s.type(new String(new char[256]).replace('\0','あ'))); yes(s.requestConversion()); yes(s.preview("仮",s.revision()));
+            no(s.type("い")); yes(s.hasCandidates()); eq("仮",s.preview()); eq("",e.committed);
+            s.backspace(); s.backspace(); no(s.hasCandidates()); yes(s.type("い")); yes(s.confirm()); eq(256,e.committed.length());
+            yes(s.type("う")); yes(s.confirm()); eq(257,e.committed.length());
         });
         test("email web email and URI fields use local English preedit", () -> {
             for (int type:new int[]{0x11,0x21,0xd1}) {
@@ -177,7 +235,7 @@ public final class CoreTests {
             s.start(second,FieldPolicy.from(0x81,0)); s.type("x"); eq("x",second.committed); no(s.hasCandidates());
         });
         test("restricted fields refuse candidate preview; FORCE_ASCII starts English", () -> {
-            for (int type : new int[]{0x81,0x91,0xe1,0x12,0x80001}) {
+            for (int type : new int[]{0x81,0x91,0xe1,0x12,0,5,0xf1}) {
                 Editor e = new Editor(); InputSession s = start(e,type,0); s.mode(InputSession.Mode.KANA); s.type("かな");
                 no(s.preview("仮名",s.revision())); eq("",s.preview()); eq("",s.text()); eq("かな",e.committed);
             }

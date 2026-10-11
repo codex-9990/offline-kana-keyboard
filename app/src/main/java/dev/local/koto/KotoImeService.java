@@ -29,6 +29,7 @@ import dev.local.koto.core.FlickSensitivity;
 import dev.local.koto.core.LearningCoordinator;
 import dev.local.koto.core.LearningData;
 import dev.local.koto.core.ConversionCandidate;
+import dev.local.koto.core.CandidateList;
 import dev.local.koto.core.PhraseConverter;
 import dev.local.koto.core.PhraseRequests;
 import java.io.IOException;
@@ -88,7 +89,8 @@ public final class KotoImeService extends InputMethodService {
                 dictionary = result; dictionaryFailed = result == null;
                 if (result!=null) phraseRequests=new PhraseRequests(new PhraseConverter(result),loader,
                         task->main.post(task),(reading,words)->{
-                            if (!destroyed && session.hasCandidates() && reading.equals(session.text()) && reading.equals(phraseReading)) {
+                            if (!destroyed && CandidateList.allowsPhrases(session)
+                                    && reading.equals(session.text()) && reading.equals(phraseReading)) {
                                 phraseCandidates=words; refreshCandidates(); updateEnterKey();
                             }
                         });
@@ -114,7 +116,7 @@ public final class KotoImeService extends InputMethodService {
         editor = new ConnectionEditor(getCurrentInputConnection(), info);
         session.start(editor, FieldPolicy.from(info.inputType, info.imeOptions));
         syncPrivacy();
-        learning.maintain();
+        if (session.policy().learning && !session.incognito()) learning.maintain();
         action = editor.action(); symbolPage = 0;
         clearCandidateState();
         if (board != null) render();
@@ -302,8 +304,10 @@ public final class KotoImeService extends InputMethodService {
         updateEnterKey();
     }
     private void cycleCandidate() {
-        if (!session.hasCandidates() || candidates.isEmpty()) return;
-        if (!prepareEdit() || candidates.isEmpty()) return;
+        if (!session.canRequestConversion() || !prepareEdit()) return;
+        if (!session.requestConversion()) return;
+        refreshCandidates();
+        if (candidates.isEmpty()) return;
         int next = (indexWord(session.preview()) + 1) % candidates.size();
         ConversionCandidate choice=candidates.get(next);
         if (session.preview(choice.word,session.revision())) previewSource=choice;
@@ -321,6 +325,7 @@ public final class KotoImeService extends InputMethodService {
     }
     private int indexWord(String word) { for (int i=0;i<candidates.size();i++) if (candidates.get(i).word.equals(word)) return i; return -1; }
     private boolean currentLearned(ConversionCandidate candidate,String reading) {
+        if (!session.policy().learning || session.incognito() || LearningStore.privateMode(controls)) return false;
         for (LearningData.Entry e:learning.state().suggest(reading,session.policy(),LearningStore.privateMode(controls),System.currentTimeMillis()))
             if (e.word.equals(candidate.word) && e.reading.equals(candidate.learningReading)) return true;
         return false;
@@ -336,7 +341,7 @@ public final class KotoImeService extends InputMethodService {
         return true;
     }
     private void recordChoice(String reading,String word,FieldPolicy policy) {
-        if (LearningStore.privateMode(controls)) return;
+        if (!policy.learning || LearningStore.privateMode(controls)) return;
         if (!candidateReading.equals(reading) || candidateState!=learning.state()) return;
         int index=indexWord(word); if (index<0) return;
         ConversionCandidate candidate=candidates.get(index);
@@ -359,10 +364,11 @@ public final class KotoImeService extends InputMethodService {
             : editor!=null && editor.commitRejected() ? session.policy().candidates
                 ? "Koto · 確定できません · 読みはキーボード内に保持" : "Koto · 入力欄へ送れませんでした"
             : session.policy().password ? "Koto · パスワード · 候補 OFF"
-            : session.policy().noPersonalizedLearning ? "Koto · プライベート入力 · 学習 OFF"
             : !session.policy().candidates ? "Koto · 直接入力 · 候補 OFF"
             : dictionaryFailed ? "Koto · 辞書を読み込めません · かな入力"
             : dictionary == null ? "Koto · 辞書を準備中 · 学習 OFF"
+            : session.policy().explicitConversion ? "Koto · 手動辞書変換 · 自動候補 OFF · 学習 OFF"
+            : session.policy().noPersonalizedLearning ? "Koto · プライベート入力 · 学習 OFF"
             : "Koto · 未確定 " + session.text().codePointCount(0,session.text().length()) + "/256 · " + learningLabel);
         String reading = session.text();
         if (!privacyReady || !session.hasCandidates()) {
@@ -370,20 +376,25 @@ public final class KotoImeService extends InputMethodService {
             TextView hint = new TextView(this); hint.setTextColor(0xffb5c8c9); hint.setTextSize(13);
             hint.setPadding(dp(8), 0, 0, 0); hint.setGravity(Gravity.CENTER_VERTICAL);
             hint.setText(session.policy().password ? "候補表示・入力の保存はありません"
-                : !session.policy().candidates ? "この入力欄では候補を使いません"
+                : !session.policy().candidates ? session.policy().numeric
+                    ? "数字・電話・日時は直接入力 · 辞書変換・学習 OFF" : "入力欄の種類が不明 · 直接入力のみ"
+                : session.policy().ascii ? "英字優先 · 日本語は「かな」→読み→「変換」 · 学習 OFF"
+                : session.policy().noSuggestions ? "自動候補 OFF · 読みを入力して「変換」 · 学習 OFF"
                 : session.mode() != InputSession.Mode.KANA ? "英字・記号もキーボード内で編集 · 確定で入力欄へ"
                 : "キーボード内の読み → 候補タップ / 確定で入力欄へ");
             candidateRow.addView(hint, new LinearLayout.LayoutParams(-2, -1)); return;
         }
-        String katakana = FlickLayout.katakana(reading);
-        if (phraseRequests!=null && !reading.equals(phraseReading)) {
+        if (session.policy().explicitConversion) {
+            phraseReading=""; phraseCandidates=Collections.emptyList();
+            if (phraseRequests!=null) phraseRequests.cancel();
+        } else if (phraseRequests!=null && !reading.equals(phraseReading)) {
             phraseReading=reading; phraseCandidates=Collections.emptyList(); phraseRequests.request(reading);
         }
-        candidates=ConversionCandidate.combine(reading,dictionary==null ? Collections.emptyList() : dictionary.candidates(reading),
-                learnedState.suggest(reading,session.policy(),LearningStore.privateMode(controls),System.currentTimeMillis()),phraseCandidates,
-                dictionary==null ? Collections.emptyList() : dictionary.exactWords(reading));
+        candidates=CandidateList.from(session,dictionary,
+                ()->learnedState.suggest(reading,session.policy(),LearningStore.privateMode(controls),System.currentTimeMillis()),phraseCandidates);
         candidateReading=reading; candidateState=learnedState;
-        if (learnedState.count(System.currentTimeMillis())<learnedState.entries.size()) learning.maintain();
+        if (session.policy().learning && !session.incognito()
+                && learnedState.count(System.currentTimeMillis())<learnedState.entries.size()) learning.maintain();
         selected = indexWord(session.preview());
         final long revision = session.revision();
         for (int i = 0; i < candidates.size(); i++) {
@@ -400,8 +411,9 @@ public final class KotoImeService extends InputMethodService {
             button.setMinWidth(dp(64)); button.setMinimumWidth(dp(64)); button.setPadding(dp(12), 0, dp(12), 0);
             button.setFilterTouchesWhenObscured(true);
             button.setOnClickListener(v -> {
-                if (prepareEdit() && snapshot.equals(session.text()) && stateAtRender==learning.state()
-                        && (!candidate.learned || currentLearned(candidate,snapshot)) && session.select(choice,revision)) changed();
+                if (prepareEdit() && snapshot.equals(session.text())
+                        && (!candidate.learned || stateAtRender==learning.state() && currentLearned(candidate,snapshot))
+                        && session.select(choice,revision)) changed();
                 else refreshCandidates();
             });
             candidateRow.addView(button, new LinearLayout.LayoutParams(-2, -1));

@@ -177,7 +177,7 @@ public final class FeatureTests {
             s.type("にほん"); s.preview("日本",s.revision()); long revision=s.revision();
             InputSession.Preedit shown=s.preedit(true); eq(revision,s.revision()); eq("日本",shown.text);
             eq("仮選択: 日本、読み: にほん",shown.description); yes(s.confirm()); eq(shown.text,e.committed);
-            for (int type:new int[]{0x81,0x91,0xe1,0x12,2,0x80001}) {
+            for (int type:new int[]{0x81,0x91,0xe1,0x12,2,3,4,0,5,0xf1}) {
                 s=session(new Editor(),new ArrayList<>(),type,0); yes(s.type("5"));
                 InputSession.Preedit hidden=s.preedit(true); no(hidden.visible); eq("",hidden.text); eq("",hidden.description);
             }
@@ -377,6 +377,80 @@ public final class FeatureTests {
             yes(Arrays.stream(KeyboardLayout.englishRow(3)).anyMatch(k->k.role==KeyboardLayout.Role.SPACE && k.weight>=4));
         });
         SkkDictionary dictionary=SkkDictionary.load(new FileInputStream(args[0])); PhraseConverter converter=new PhraseConverter(dictionary);
+        test("explicit fixed conversion never invokes retained-history lookup or accepts stale generated phrases",()->{
+            Fixture f=new Fixture(); f.enable(7); yes(f.pick("にほん","日本")); f.run(); eq(1,f.suggest("にほん").size());
+            int writes=f.storage.writes,reads=f.storage.reads,clears=f.storage.clears;
+            for(int type:new int[]{0x80001,0x800a1,0x11,0x21,0xd1,0x80011,0x80021,0x800d1})
+                for(int flags:new int[]{0,0x1000000,0x80000000,0x81000000}) {
+                    List<String> choices=new ArrayList<>(); Editor e=new Editor(); InputSession s=session(e,choices,type,flags);
+                    s.mode(InputSession.Mode.KANA); yes(s.type("にほん")); no(s.policy().learning); no(s.hasCandidates());
+                    java.util.function.Supplier<List<LearningData.Entry>> forbidden=()->{throw new AssertionError("Retained history lookup");};
+                    yes(CandidateList.from(s,dictionary,forbidden,Arrays.asList("旧分割" )).isEmpty());
+                    yes(s.requestConversion()); List<ConversionCandidate> list=CandidateList.from(s,dictionary,forbidden,Arrays.asList("旧分割"));
+                    yes(list.stream().anyMatch(c->c.word.equals("日本"))); no(list.stream().anyMatch(c->c.learned || c.phrase || c.word.equals("旧分割")));
+                    no(CandidateList.allowsPhrases(s)); yes(s.select("日本",s.revision())); yes(choices.isEmpty());
+                    no(f.coordinator.record("にほん","日本",s.policy(),false,true,f.coordinator.state().generation));
+                    yes(f.coordinator.state().suggest("にほん",s.policy(),false,f.now).isEmpty());
+                }
+            eq(writes,f.storage.writes); eq(reads,f.storage.reads); eq(clears,f.storage.clears); eq(0,f.worker.tasks.size());
+        });
+        test("body web body and URL flags independently control prediction conversion ASCII and learning",()->{
+            for(int type:new int[]{1,0xa1,0x11}) for(int noSuggestions:new int[]{0,0x80000})
+                for(int flags:new int[]{0,0x1000000,0x80000000,0x81000000}) {
+                    InputSession s=session(new Editor(),new ArrayList<>(),type|noSuggestions,flags); s.mode(InputSession.Mode.KANA); s.type("にほん");
+                    boolean explicit=type==0x11 || noSuggestions!=0 || (flags&0x80000000)!=0;
+                    boolean learning=!explicit && (flags&0x1000000)==0; eq(learning,s.policy().learning);
+                    int[] lookups={0}; java.util.function.Supplier<List<LearningData.Entry>> remembered=()->{
+                        lookups[0]++;return Collections.singletonList(new LearningData.Entry("にほん","記憶専用",1));};
+                    List<ConversionCandidate> before=CandidateList.from(s,dictionary,remembered,Arrays.asList("分割専用"));
+                    eq(explicit,before.isEmpty()); eq(learning ? 1 : 0,lookups[0]);
+                    yes(s.requestConversion()); List<ConversionCandidate> after=CandidateList.from(s,dictionary,remembered,Arrays.asList("分割専用"));
+                    yes(after.stream().anyMatch(c->c.word.equals("日本"))); eq(learning,after.stream().anyMatch(c->c.learned));
+                    eq(!explicit,after.stream().anyMatch(c->c.phrase)); eq(learning ? 2 : 0,lookups[0]);
+                }
+        });
+        test("NO_PERSONALIZED_LEARNING and manual private mode bypass history but retain ordinary static conversion",()->{
+            for(boolean manual:new boolean[]{false,true}) {
+                InputSession s=session(new Editor(),new ArrayList<>(),0xa1,manual ? 0 : 0x1000000); if(manual)s.incognito(true);
+                s.type("にほん"); yes(s.hasCandidates());
+                List<ConversionCandidate> list=CandidateList.from(s,dictionary,()->{throw new AssertionError("Private history lookup");},Collections.emptyList());
+                yes(list.stream().anyMatch(c->c.word.equals("日本"))); no(list.stream().anyMatch(c->c.learned));
+            }
+        });
+        test("dictionary completion and learning notifications cannot open unsolicited manual candidates",()->{
+            for(int type:new int[]{0x80001,0x800a1,0x80011}) {
+                InputSession s=session(new Editor(),new ArrayList<>(),type,0); s.mode(InputSession.Mode.KANA); s.type("にほん");
+                java.util.function.Supplier<List<LearningData.Entry>> forbidden=()->{throw new AssertionError("Notification history lookup");};
+                yes(CandidateList.from(s,null,forbidden,Collections.emptyList()).isEmpty());
+                for(int notification=0;notification<10;notification++)yes(CandidateList.from(s,dictionary,forbidden,Arrays.asList("遅延候補")).isEmpty());
+                s.requestConversion(); yes(CandidateList.from(s,null,forbidden,Collections.emptyList()).stream().anyMatch(c->c.word.equals("にほん")));
+                yes(CandidateList.from(s,dictionary,forbidden,Collections.emptyList()).stream().anyMatch(c->c.word.equals("日本")));
+                s.type("ご"); yes(CandidateList.from(s,dictionary,forbidden,Arrays.asList("遅延候補")).isEmpty());
+                s.start(new Editor(),FieldPolicy.from(type,0)); s.mode(InputSession.Mode.KANA); s.type("にほん");
+                yes(CandidateList.from(s,dictionary,forbidden,Arrays.asList("遅延候補")).isEmpty());
+            }
+        });
+        test("delayed segmented delivery is cancelled across normal-to-manual fields even for repeated readings",()->{
+            Queue worker=new Queue(),ui=new Queue(); List<String> delivered=new ArrayList<>();
+            InputSession s=session(new Editor(),new ArrayList<>(),1,0); s.type("にほんにいきます");
+            PhraseRequests requests=new PhraseRequests(converter,worker,ui,(r,c)->{
+                if(CandidateList.allowsPhrases(s) && r.equals(s.text()))delivered.add(r);
+            });
+            requests.request(s.text()); worker.run(); eq(1,ui.tasks.size());
+            s.start(new Editor(),FieldPolicy.from(0x800a1,0)); s.type("にほんにいきます"); requests.cancel(); ui.run(); yes(delivered.isEmpty());
+            s.requestConversion(); no(CandidateList.allowsPhrases(s));
+            // Defence in depth: even a direct old listener delivery cannot become a candidate.
+            List<ConversionCandidate> list=CandidateList.from(s,dictionary,()->{throw new AssertionError("History");},Arrays.asList("日本に行きます"));
+            no(list.stream().anyMatch(c->c.phrase));
+            s.start(new Editor(),NORMAL); s.type("にほんにいきます"); requests.request(s.text()); worker.run(); ui.run(); eq(1,delivered.size());
+        });
+        test("restricted classes reject conversion before dictionary history and phrase assembly",()->{
+            for(int type:new int[]{0x81,0x91,0xe1,0x12,2,3,4,0,5,15,0xf1,0xff1}) {
+                InputSession s=session(new Editor(),new ArrayList<>(),type|0x80000,0x81000000); s.mode(InputSession.Mode.KANA); s.type("にほん");
+                no(s.requestConversion()); no(CandidateList.allowsPhrases(s));
+                yes(CandidateList.from(s,dictionary,()->{throw new AssertionError("Restricted history");},Arrays.asList("日本")).isEmpty());
+            }
+        });
         test("offline segmented phrase candidates cover real dictionary and polite endings",()->{
             List<String> a=converter.convert("にほんにいきます",()->true); yes(a.contains("日本に行きます"));
             List<String> b=converter.convert("きょうはとうきょうにいきます",()->true); yes(b.contains("今日は東京に行きます"));

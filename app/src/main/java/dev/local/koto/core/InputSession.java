@@ -14,7 +14,7 @@ public final class InputSession {
     }
     public interface ChoiceListener { void committed(String reading,String word,FieldPolicy policy); }
     private ChoiceListener choices;
-    private boolean incognito,shifted,limitReached;
+    private boolean incognito,shifted,limitReached,conversionRequested;
     private Editor editor;
     private String reading="",preview="";
     private long revision;
@@ -50,9 +50,10 @@ public final class InputSession {
     public boolean shifted() { return shifted; }
     public boolean incognito() { return incognito; }
     public boolean limitReached() { return limitReached; }
+    public boolean conversionRequested() { return conversionRequested; }
     public void choices(ChoiceListener listener) { choices=listener; }
     public boolean incognito(boolean value) {
-        if (incognito!=value) { incognito=value; cancelPreview(); revision++; }
+        if (incognito!=value) { incognito=value; cancelPreview(); conversionRequested=false; revision++; }
         return true;
     }
     public boolean syncIncognito(java.util.function.BooleanSupplier currentSetting) {
@@ -60,9 +61,16 @@ public final class InputSession {
         try { value=currentSetting.getAsBoolean(); } catch (RuntimeException ignored) { value=true; }
         return incognito(value);
     }
-    public boolean hasCandidates() { return policy.candidates && mode==Mode.KANA && !reading.isEmpty(); }
+    public boolean canRequestConversion() { return policy.candidates && mode==Mode.KANA && !reading.isEmpty(); }
+    public boolean hasCandidates() { return canRequestConversion() && (!policy.explicitConversion || conversionRequested); }
+    /** Only the user's conversion control opens candidates in explicit-only fields. */
+    public boolean requestConversion() {
+        if (!canRequestConversion()) return false;
+        if (policy.explicitConversion && !conversionRequested) { conversionRequested=true; revision++; }
+        return true;
+    }
     public void shift() { shifted=!shifted; revision++; }
-    public void mode(Mode next) { cancelPreview(); mode=next; shifted=false; revision++; }
+    public void mode(Mode next) { cancelPreview(); conversionRequested=false; mode=next; shifted=false; revision++; }
     /** True means this key was accepted exactly once into preedit or the direct-entry host. */
     public boolean type(String value) {
         if (editor==null || value==null || value.isEmpty()) return false;
@@ -74,7 +82,7 @@ public final class InputSession {
         if (reading.codePointCount(0,reading.length())+next.codePointCount(0,next.length())>MAX_PREEDIT_CODE_POINTS) {
             limitReached=true; return false;
         }
-        preview=""; reading+=next; shifted=false; limitReached=false; revision++; return true;
+        preview=""; reading+=next; conversionRequested=false; shifted=false; limitReached=false; revision++; return true;
     }
     public boolean preview(String value,long expectedRevision) {
         if (editor==null || expectedRevision!=revision || !hasCandidates() || value==null || value.isEmpty()) return false;
@@ -88,14 +96,14 @@ public final class InputSession {
     public void modify() {
         if (editor==null || reading.isEmpty()) return;
         cancelPreview(); String next=FlickLayout.modifyLast(reading);
-        if (!next.equals(reading)) { reading=next; revision++; }
+        if (!next.equals(reading)) { reading=next; conversionRequested=false; revision++; }
     }
     public void backspace() {
         if (editor==null) return;
         if (!preview.isEmpty()) { cancelPreview(); return; }
         if (reading.isEmpty()) editor.delete();
         else reading=reading.substring(0,reading.offsetByCodePoints(reading.length(),-1));
-        limitReached=false; revision++;
+        conversionRequested=false; limitReached=false; revision++;
     }
     public boolean select(String value,long expectedRevision) { return expectedRevision==revision && select(value); }
     public boolean select(String value) {
@@ -117,7 +125,7 @@ public final class InputSession {
     public void enter() { if (editor!=null) { if (!reading.isEmpty()) confirm(); else editor.enter(); } }
     public void cursor(int direction) { if (editor!=null) { editor.cursor(direction); revision++; } }
     /** Explicit cancel, hide or field end discards only unconfirmed local text. */
-    public void discard() { reading=""; preview=""; shifted=false; limitReached=false; revision++; }
+    public void discard() { reading=""; preview=""; conversionRequested=false; shifted=false; limitReached=false; revision++; }
     /** A relayout within the same active input preserves the draft and invalidates old buttons. */
     public void relayout() { shifted=false; revision++; }
     public void finish() { if (editor!=null) editor.finish(); discard(); editor=null; }
