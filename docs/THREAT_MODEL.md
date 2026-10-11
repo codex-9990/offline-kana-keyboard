@@ -1,50 +1,43 @@
-# Threat model
+# Threat model — 0.1.6
 
 ## Goal and scope
 
-Koto performs kana input, dictionary lookup and bounded heuristic phrase proposals locally. Data flows from user gesture → IME RAM → Android InputConnection → host editor. With opt-in learning, eligible explicit dictionary choices also create bounded app-private reading/word/timestamp records. No conversion download or cloud request exists. The normal host-editor exchange is necessary for a keyboard.
+Koto performs kana input, dictionary lookup and bounded heuristic phrase proposals locally. Ordinary input flows gesture → keyboard RAM/local draft → explicit confirmation → Android InputConnection → host editor. Password, numeric and NO_SUGGESTIONS fields use direct key commits. Optional learning retains only eligible explicit dictionary-exact reading/word/last-selection records. There is no conversion download or cloud request.
 
-This is a development prototype. The [baseline artifact audit and corrected-build verification](SECURITY_AUDIT.md) document their exact scope; they do not establish an absolute guarantee against a compromised device. Airplane-mode operation would be useful functional evidence, but would not establish the privacy boundary by itself.
+This development trial's source/artifact checks establish a bounded application privacy design, not an absolute guarantee on a compromised device. Airplane-mode functionality alone would not establish no-egress. Native Android/S24 validation remains NOT RUN.
 
 ## Assets and possible observers
 
-Sensitive assets are composition, candidates, supplied characters and, if enabled, local learned lexical records. Composition/phrase state remains transient; learned pairs are intentionally retained for the selected period. Preferences contain six non-text controls/policy fields: height, haptics, flick distance, private mode, retention days and cleanup-required flag. Learning defaults off.
+Sensitive assets are the transient reading/preview/candidates and supplied text; opt-in learned lexical pairs are deliberately retained. Local preedit has at most 256 code points and is not saved. Static-dictionary/candidate/phrase state remains transient. Six non-text preferences control height, haptics, flick distance, private mode, retention days and cleanup-required state. Learning defaults off.
 
-Potential observers include an untrusted network SDK, a malicious app binding the IME, a backup/transfer agent, a log collector, an external speech recognizer, a clipboard collector, a host app, accessibility services, screen capture, root/ADB and a compromised OS. The first six are addressed within the application. The host and privileged OS-level observers remain outside its guarantee.
+Possible observers include network SDKs, malicious IME binders, backup/transfer agents, log collectors, speech/clipboard collectors, host apps, accessibility/screen capture, privileged ADB/root and a compromised OS. The application addresses its own egress, service access, persistence, backup, logging and optional-feature paths. Host and privileged observers remain outside its guarantee.
 
 ## Implemented boundaries
 
-| Area | Implemented control | Verification scope |
+| Area | Control | Evidence/limit |
 |---|---|---|
-| Direct network | No permissions, socket/HTTP SDK, WebView, telemetry, ads or crash upload | Source plus actual packaged manifest and DEX checks |
-| Indirect outward calls | Only internal settings, system IME picker, and a user-tapped settings intent resolved to a system activity and made explicit; no typed extras | Source inspection; runtime routing not run |
-| IME access | Required exported service is guarded by BIND_INPUT_METHOD; internal settings are not exported | Source and packaged manifest |
-| Persistence | Opt-in lexical records only, max 128/32 KiB; six non-text preferences; no whole-input history | Production core plus real host file tests; Android filesystem test not run |
-| Backup and transfer | allowBackup=false and separate explicit exclusions for nine domains in legacy/cloud/device-transfer rules | Source and compiled APK resource XML; actual OEM transfer not run |
-| Password input | Text, visible, web and number password variants detected; direct commits, no candidates or composition string | Host policy/session tests; Android editors not run |
-| Learning restrictions | Password/restricted/sensitive-type flags and manual private mode block recording and remembered lookup; static conversion remains available | Host tests; ordinary-field semantic sensitivity cannot be inferred |
-| Clipboard/speech | No clipboard or speech feature, listeners, service or corresponding permission | Source/DEX/manifest checks |
-| Logs | No runtime log sites or text-bearing error uploads | Source and DEX checks; runtime logcat not run |
-| Dictionary data | Pinned upstream bytes; no Lisp evaluation, plugins, dynamic code or update downloader | Hash, deterministic derivation and lookup tests |
-| Input lifecycle | Clear transient state on hidden view, editor finish, focus changes and configuration changes | Host model tests; actual service lifecycle/rotation not run |
-| Retention/clear | Lookup excludes expired records; background pruning and clear invalidate stale generations; failures stop use and are reported | Host failure/race tests and real file adapter; Android I/O/runtime not run |
-| Storage growth | Fixed no-backup files, max 32 KiB each; no app journal/dictionary cache; bounded pending worker/phrase queues | Host quota/interruption tests; Android-managed bookkeeping size unmeasured |
-| Debug access | Versions 0.1.1/0.1.2 explicitly disable debugging in both build routes | Source plus actual signed APK binary manifest; authorized privileged OS access remains out of scope |
+| Network | Zero permissions; no HTTP/socket/WebView/telemetry/advertising/crash upload SDK | Source plus actual manifest/DEX; no runtime network capture available |
+| Outward calls | Internal settings, system IME picker and explicit user-tapped system keyboard settings; no typed extras | Source audited; routing runtime NOT RUN |
+| Service access | Exported IME protected by BIND_INPUT_METHOD; settings internal; only launcher otherwise exported | Source and packaged manifest |
+| Preedit ownership | Local bounded RAM; no setComposingText/Region, inferred selection or surrounding reads; explicit commit first finishes any host-owned style | Source/API fixture/DEX; native host compatibility untested |
+| Password fields | All supported password variations: direct commits, no local draft/preview/candidate display or learning | Policy/core/API fixture; native editors untested |
+| Local learning | Default off; exact lexical explicit choices only;128 entries/32KiB; one fixed data/temp pair under no-backup storage | Host core/race/failure and real Linux file tests; Android app UID/storage untested |
+| Field/private policy | Password/restricted/NO_PERSON flags/sensitive types/manual private mode block remembered lookup and learning; independent live gates on worker/snapshots | Host tests; sensitivity of ordinary editor text cannot be inferred |
+| Backup/transfer | allowBackup=false; all nine legacy/cloud/transfer domains excluded; learning uses getNoBackupFilesDir | Actual compiled XML/manifest; OEM transfer NOT RUN |
+| Logs | No runtime log sites or text-bearing error/upload path | Source/DEX; runtime logcat NOT RUN |
+| Speech/clipboard | No feature, recognizer/listener/service/history or permission | Source/DEX/manifest |
+| Dictionary | Pinned licensed bytes; no SKK expression evaluation, dynamic executable plugins or updater | Hash/deterministic derivation/lookup tests |
+| Lifecycle | Hide/fresh field/finish clears unconfirmed draft; same-session relayout preserves and invalidates old actions | Host session tests; real framework ordering/rotation untested |
+| Retention/clear | Expired/future-dated records excluded on lookup; queued/stale records invalidated; truthful failure/cleanup gating | Host races/files; exact stopped-app deletion/secure erasure not promised |
+| Growth | Bounded learning/phrase queues; no app journal, sentence history or disk dictionary cache | Host bounds; Android-managed overhead unmeasured |
+| Debugging/signing | Current manifest debuggable=false; approved development certificate reused; signing files outside deliverables | Actual signed APK and apksig receipt; integrity does not establish usability |
 
 ## Limits
 
-The receiving app can record and transmit text; Android delivers ordinary composed text to it before confirmation. This cannot be prevented by an IME. Password characters must also be delivered to the receiving app.
+The host receives explicitly confirmed ordinary text and direct restricted/password characters and may record/transmit them. Ordinary unconfirmed text stays in the keyboard rather than being supplied as in-host composition. Accessibility and screen capture can observe the normal local draft/candidates; password echo is suppressed. Keyboard-private UI does not isolate text from privileged observers or make sensitive ordinary fields identifiable.
 
-A compromised OS can disregard manifests, inspect memory, capture input or transfer data. OEM-specific transfer behavior has not been tested. Full input/composition is not persisted, but opt-in learned lexical pairs contain deliberately retained reading/word data.
+A compromised OS can disregard permissions/backup flags, inspect memory or transfer data. Java/Binder strings and old references cannot be reliably wiped. Clearing files/references is not physical secure erasure. Plaintext learned pairs stay inside the app UID boundary; root/OS compromise can access them. Stopped-app expiry is enforced at the next lookup/use, not exact-time disk deletion. Failed policy persistence cannot establish durable controls and is reported. Clear does not remove static words or text already delivered to the host.
 
-Java String objects and Binder/editor copies cannot be reliably wiped. Clearing session/candidate references reduces retention but is not secure erasure. Accessibility and screen capture can observe normal on-screen candidates; password candidates are suppressed. The public launcher intentionally ignores inbound extras and stores no supplied input data.
+All six earlier APKs are retained unchanged. Known composition regressions make 0.1.3–0.1.5 unsuitable for daily typing; signing success did not establish correct editing. The 0.1.6 trial is held pending independent review and native QA. No physical device or new SDK agreement/key was touched and no public APK release occurred.
 
-Original 0.1.0, 0.1.1, 0.1.2, 0.1.3 and 0.1.4 APKs are retained unchanged. The 0.1.5 trial keeps debugging disabled and uses the same approved development certificate. Android installation, runtime behavior and OEM transfer are untested. A public APK release needs separate approval. Signing files stay outside source/export archives.
-
-Composition selection tracking stores only at most 64 transient coordinate records, with no strings or persistence. Known owned spans may be re-established through the host InputConnection; surrounding text is never read. Unknown anchors/rejected operations stop safely instead of guessing a host substring. Actual OEM/editor callback behavior is untested; see [COMPOSITION.md](COMPOSITION.md).
-
-Learned records are plaintext inside the app UID boundary. A stopped app does not delete at an exact expiry clock tick. File removal/reference clearing is not physical secure erasure. Failed policy writes cannot establish durable settings guarantees; the UI reports failure. Clear does not remove host text, static dictionary entries or OS-level copies. [LOCAL_LEARNING.md](LOCAL_LEARNING.md) describes these limits.
-
-## Before adding features
-
-Any expansion of learning must retain field/private-mode exclusions, bounded app-private storage, backup/transfer controls and truthful deletion. Clipboard history must remain opt-in. Mozc needs an explicit persistence/native-dependency review and new artifact/outward-call audits. No network client or recognizer may arrive implicitly with a dependency.
+Any future Mozc/native engine or learning expansion requires complete dependency/license/persistence/outward-path review and fresh packaged audits. Clipboard history must remain opt-in if ever introduced. No cloud recognizer or client may arrive implicitly. [Local learning](LOCAL_LEARNING.md), [composition tradeoffs](COMPOSITION.md) and [verification](VERIFICATION.md) describe current scope.

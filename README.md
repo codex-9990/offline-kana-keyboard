@@ -1,44 +1,39 @@
-# Koto — Offline Japanese Keyboard 0.1.5
+# Koto — Offline Japanese Keyboard 0.1.6
 
-日本語 12 キーのフリック、英語 QWERTY、端末内の漢字候補を備えた Android キーボードの開発用試作版です。**学習は初期 OFF**。保存期間、フリック感度、キー高さ、振動を調整できます。ネットワーク権限・広告・解析・音声・クリップボード機能はありません。
+日本語12キーのフリック、英語QWERTY、端末内の漢字候補を備えたAndroidキーボードの開発用試作版です。**学習は初期OFF**。ネットワーク権限・広告・解析・音声・クリップボード機能はありません。
 
-The signed 0.1.5 trial is not debuggable, uses the existing approved development certificate, and targets API 35 with minimum API 26. **Android emulator and Galaxy S24 runtime validation remain NOT RUN.** It is not yet validated for daily use.
+**0.1.6では、通常の入力はキーボード内の「未確定の読み」に表示されます。候補タップ、または「確定」で入力欄へ送ります。英字・記号も同じ操作です。** 入力欄には確定まで表示されません。空白は未確定入力に追加され、確定しません。パスワード・数値・NO_SUGGESTIONS欄では直接入力します。
 
-Version 0.1.5 addresses the reported 0.1.2 failure where each kana committed immediately. A new callback-aware host test reproduces that defect before the fix. Expected editor selection updates now preserve the reading; a missing span can be restored using known cursor metadata. Sequential に・ほ・ん → 日本 passes the new tests. **The user's app/device still needs a retest**; older host-test success did not establish that behavior. See [composition diagnosis](docs/COMPOSITION.md).
+Version 0.1.6 replaces host composing-span recovery with a keyboard-local draft. Independent review found a release-blocking 0.1.5 sequence: にほん → choose 日本 → type ご before callbacks could lose the accepted ご and stop further kana. The new tests require every accepted key exactly once and continued conversion; lockout does not count as success. **The user's affected app/device has not been retested, so the reported failure is not claimed resolved.** See [composition change and tradeoff](docs/COMPOSITION.md).
 
-Independent review found two further 0.1.3 regressions: incremental typing followed by a cursor move could reuse an acknowledged position, and a dropped span during delayed callbacks could duplicate the reading. Both fail in the fixture before correction and pass in 0.1.5. Acknowledgements consume pending updates; known spans are restored before unacknowledged replacement. **0.1.3 should not be used for daily typing.** 0.1.5 also remains a device-unverified trial.
+The signed trial is not debuggable, reuses the approved development certificate, and targets API 35 with minimum API 26. **Android emulator and Galaxy S24 validation remain NOT RUN.** The source and review packet are prepared; private replacement delivery is held pending independent review. It is not validated for daily use.
 
-Review of the local 0.1.4 trial found that a coalesced preview/cancel 3→3 callback could leave position 2 eligible, hiding a later real cursor move. The new before-fix test reproduces this. Current-position acknowledgements now retire through the latest match. **When delayed updates are ambiguous after a cursor-position reversal, visible text is preserved but kana conversion pauses until a fresh editor start.** The keyboard shows a Japanese restart message. Shorter commits followed immediately by a new word can also trigger this conservative stop. English/symbol direct input remains available. This usability limitation needs independent and device review; it is not seamless callback recovery.
+## Controls and editing
 
-## Implemented controls
+- Japanese keypad: conventional twelve kana positions and five flick directions; left mode controls and right delete/conversion/space/Enter controls. English: staggered QWERTY, wide Shift/delete and space. Familiar original arrangement; no copied branding or exact Gboard-parity claim.
+- Visible two-line scrollable local draft above candidates; at most **256 code points**. At the limit, confirm, delete or cancel before continuing; text is never automatically committed.
+- Tap a candidate to confirm it, or cycle with 変換 to preview locally and press 確定. The first Backspace cancels a preview; subsequent Backspace deletes the last draft code point. Typing after preview restores the original reading and appends the key once. 取消 discards the entire unconfirmed draft.
+- Switching kana/English/symbol modes preserves the reading and cancels a preview. Space appends locally. Cursor arrows move the host caret while retaining the draft; later confirmation uses the host's actual selection. Empty-draft delete uses the native host delete key.
+- **Hiding the keyboard or starting a fresh field/session cancels unconfirmed input.** Relayout within the same active session preserves it, but a framework hide/restart during rotation may cancel it. Actual rotation behavior is untested.
+- All 95 printable ASCII characters, two symbol pages, one-shot Shift and labelled editor actions. Password variants show no draft/candidates and commit directly.
+- Flick distance **8–40 dp**, default/reset **22 dp**. The settings try-it pad shows only its last kana, sends nothing to a host, never learns/persists and resets when hidden.
+- Height **44–76 dp**, default **58**; landscape keys **44 dp**, no fullscreen extraction. Haptics default off. Held delete/arrows cancel on release, hide, field change and lifecycle transitions. Real S24 touch/insets/haptic behavior remains unmeasured.
 
-- Japanese keypad with conventional kana positions, mode controls on the left and delete/conversion/space/Enter on the right. English uses staggered QWERTY, wider Shift/delete, a wide spacebar and bottom mode controls. This is an original familiar arrangement, without copied Gboard branding or an exact-parity claim.
-- Flick distance **8–40 dp**, default/reset **22 dp**. Smaller distance means higher sensitivity. The settings try-it pad displays only its last kana, sends nothing to a host editor, never learns or persists its input, and resets when hidden.
-- Offline word candidates from licensed **SKK-JISYO.ML**: 48,750 keys / 67,342 words. Raw kana/katakana remain reachable within the 64-candidate limit.
-- Bounded heuristic phrase proposals, labelled **分割**, from the same dictionary with particles and limited polite-ending rules. Verified examples include にほんにいきます → 日本に行きます and きょうはとうきょうにいきます → 今日は東京に行きます. These work with learning off; generated phrases are never saved.
-- Tap a candidate to commit, or cycle with 変換 to preview. Enter/space explicitly confirms a preview. Typing/mode/cursor commits once; first Backspace restores the reading. Those implicit commits do not learn.
-- Held cursor/delete keys cancel on release, hide, field changes and lifecycle transitions. Custom editor actions display their action names.
-- All 95 printable ASCII characters, two symbol pages and one-shot Shift. Password fields suppress candidates/composition. Height 44–76 dp, default 58; landscape 44 dp without fullscreen extraction. Haptics default off.
+## Conversion and local learning
 
-## Optional local learning and storage
+The licensed **SKK-JISYO.ML** dictionary has **48,750 keys / 67,342 candidates**. Kana/katakana fallbacks remain reachable within a 64-candidate limit. Bounded heuristic phrase proposals, labelled 分割, use that dictionary plus particles and limited polite-ending rules. Tested examples include 日本に行きます and 今日は東京に行きます. This is not Mozc, a contextual grammar engine or full SKK interaction; homophones, segmentation, vocabulary and conjugations have limits. No surrounding host text is read. See [conversion scope and Mozc assessment](docs/CONVERSION.md).
 
-Settings offer **Off / 1 / 7 / 30 / 90 days**, clear-all and private mode. Only successfully and explicitly confirmed dictionary-exact Japanese lexical choices are eligible. Records contain **reading, word and last explicit selection time**; matching readings/prefixes can show up to eight remembered candidates. There is no whole-sentence history, surrounding-text capture, contextual prediction or frequency log.
+Settings offer **Off / 1 / 7 / 30 / 90 days**, clear-all and private mode. Only successful explicit dictionary-exact lexical choices may save reading/word/last-selection time. Raw kana, generated phrases, cancelled/failed choices and whole sentences are not saved. Private mode and password/NO_PERSONALIZED_LEARNING/NO_SUGGESTIONS/sensitive field policies block remembered lookup and recording. Ordinary fields may be sensitive; leave learning off or use private mode.
 
-Passwords, NO_PERSONALIZED_LEARNING, NO_SUGGESTIONS, numeric, forced-ASCII, email/URI, name/address and manual private mode prevent learning and remembered-candidate lookup. Ordinary fields may contain sensitive content without flags; use private mode or leave learning off.
+Limits: **128 records / 32 KiB**, one fixed no-backup data file plus one temporary file of at most 32 KiB, one worker and at most 32 pending choices. Clear/Off invalidates old suggestions and queued choices immediately; the UI reports completion only after file operations succeed. Expiry is enforced on lookup; stopped-app exact-time deletion and physical secure erasure are not promised. The static dictionary is **1,209,080 bytes uncompressed**; the signed APK is **512,678 bytes**. Android installation/pref/filesystem overhead is unmeasured. See [learning details](docs/LOCAL_LEARNING.md).
 
-At most **128 entries / 32 KiB serialized data** are kept. Oldest entries are deterministically evicted. Expired/future-dated entries are unusable immediately on lookup; disk pruning runs in the background on start/use and period changes. Reads/previews do not extend expiry, and extending retention cannot revive expired entries. This does not schedule physical deletion while the app is stopped.
+## Privacy and verification
 
-One bounded worker coalesces at most 32 pending choices. Files use fixed names in app-private no-backup storage: one data file, one temporary file, each capped at 32 KiB. Interrupted temporary files are discarded; there is no app-created journal, duplicate backup or disk dictionary cache. Clear/disable invalidates old suggestions and queued choices immediately; completion waits for the storage operation. Failures stop learning and are displayed. Clear-all retains the period setting for future explicit choices; Off deletes records and stops learning.
+The actual signed manifest requests **zero permissions**, disables debugging/backup/cleartext, protects the exported IME with BIND_INPUT_METHOD and keeps settings internal. Nine backup domains are excluded in legacy/cloud/device-transfer XML. Source/DEX checks found no network, logging, analytics, clipboard, speech, upload or surrounding-text read path. Ordinary unconfirmed text stays in keyboard RAM; confirmed and restricted direct text goes to the host app, which may transmit it. OS/root/privileged observers and memory erasure are outside the no-egress boundary. [Threat model](docs/THREAT_MODEL.md).
 
-The shipped dictionary remains fixed at **1,209,080 bytes uncompressed**; the signed APK is **512,678 bytes**. Clearing learning leaves that dictionary and display preferences intact. Android-managed installation files, filesystem metadata and preference bookkeeping are additional; actual installed size is unmeasured. No physical secure-erasure guarantee is made. See [local learning/storage details](docs/LOCAL_LEARNING.md).
+PASS: **78 core/feature groups**, **37 Android API host groups**, **59,048 bounded sequences**, **1,000 continuous conversion cycles accounting for 4,000 accepted keys and 2,000 confirmations**, **18 source checks**, **20 signed APK checks**, v2/v3 signatures, payload equality and tamper rejection. These are synthetic/host/artifact checks. Real Binder/Looper, touch, native deletion, rotation, app-private storage/backup, the reporting app and S24 remain **NOT RUN**. Exact results and retained failures: [VERIFICATION.md](docs/VERIFICATION.md).
 
-## Privacy boundary
-
-The actual signed manifest requests **zero permissions**, disables debugging/backup/cleartext traffic, protects the exported IME with BIND_INPUT_METHOD and keeps settings internal. All nine backup domains are excluded in legacy/cloud/device-transfer XML. Optional learning and six non-text controls stay local. No input-text log or upload path is present in source/DEX checks.
-
-The host receives composed/committed text and may transmit it. A compromised OS/root, privileged observers and secure erasure of JVM/Binder strings are outside this boundary. Clear-all cannot remove text already supplied to the host or words in the static dictionary. See [threat model](docs/THREAT_MODEL.md) and [exact verification results](docs/VERIFICATION.md).
-
-## Build and test
+## Build, delivery and licensing
 
 Use a complete JDK 17+, Python 3 and curl on Linux x86_64:
 
@@ -48,18 +43,10 @@ Use a complete JDK 17+, Python 3 and curl on Linux x86_64:
     python3 scripts/build_aosp.py --fetch
     bash scripts/test_android_adapter.sh
 
-Fetch explicitly obtains three pinned recognized open-source compiler artifacts; they are not packaged in the app. Later builds omit --fetch. This route installs no Android SDK, accepts no SDK agreement, creates no key and operates no device. See [toolchain provenance](docs/TOOLCHAIN.md).
+Fetch explicitly obtains three pinned recognized open-source compiler artifacts; they are not app dependencies. Later builds omit --fetch. The builder clears only its own generated output. This route installs no SDK, accepts no SDK agreement, creates no signing key and operates no device. [Toolchain provenance](docs/TOOLCHAIN.md).
 
-Unsigned non-debuggable output: dist/offline-kana-keyboard-0.1.5-trial-unsigned.apk. Signed private-delivery trial: dist/offline-kana-keyboard-0.1.5-trial.apk. Version code **6** uses the same certificate as earlier trials. Check [artifact/signature receipt](docs/SIGNING.md) before a separately approved device installation.
+Outputs: dist/offline-kana-keyboard-0.1.6-trial-unsigned.apk and the separately development-signed dist/offline-kana-keyboard-0.1.6-trial.apk; version code **7**. [Signature/artifact receipt](docs/SIGNING.md). Conventional approved-SDK build/lint and real Android QA remain unavailable here; [runtime setup and minimal gate](docs/RUNTIME_QA.md) and [device test plan](docs/DEVICE_TEST_PLAN.md) describe what is still required.
 
-A conventional approved-SDK build uses ANDROID_SDK_ROOT and scripts/build_debug.sh. SDK auto-download is disabled. Gradle build/lint remain NOT RUN here because the SDK is absent. [RUNTIME_QA.md](docs/RUNTIME_QA.md) describes setup approval and KVM requirements; [DEVICE_TEST_PLAN.md](docs/DEVICE_TEST_PLAN.md) remains the daily-use validation gate.
+Application code, tests, docs and dictionary are **GPL-2.0-or-later**; original dictionary source/header, notices and GPL text are retained. Gradle wrapper utilities are separately Apache-2.0. No Sumire/Gboard/Mozc code or binary was adopted.
 
-## Conversion, source and licensing
-
-Phrase costs/segmentation are heuristic, not Mozc, a linguistic grammar engine or Gboard-quality conversion. Unknown/ambiguous readings and unsupported conjugations can be wrong; choose kana or words individually. No surrounding context is read. [Conversion scope and mature-engine prerequisites](docs/CONVERSION.md) document the limits.
-
-Application code, tests, documentation and SKK dictionary are **GPL-2.0-or-later**. Original dictionary source/header, notices and GPL text are retained. Gradle wrapper utilities are separately Apache-2.0. No Sumire/Gboard/Mozc executable or code was adopted.
-
-Source: [codex-9990/offline-kana-keyboard](https://github.com/codex-9990/offline-kana-keyboard). Application commit: **c186fb47a0f4ff086444d3908994291d4dabf213**. Delivery uses the user's Library; no public APK release, device installation or new signing identity was created.
-
-The 0.1.5 APK and review packet are prepared locally. Replacement delivery is held pending independent review; this version has not replaced the Library trial.
+Source: [codex-9990/offline-kana-keyboard](https://github.com/codex-9990/offline-kana-keyboard). Application commit: **0aa62da1c7428341556a035864fd715be2212d61**. APK SHA-256: **2ba3e39ca74d7da11015be808a1014ed4fcde6e67ff77b4cab332bfe3505d9ff**. Delivery route: the user's Library after the existing independent-review hold is cleared; **0.1.6 has not been uploaded**. No public APK release, device installation or new signing identity was created. Earlier APKs remain unchanged; 0.1.3–0.1.5 contain known composition regressions and should not be used for daily typing.

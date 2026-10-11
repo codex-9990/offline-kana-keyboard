@@ -1,4 +1,4 @@
-# Offline conversion choice and 0.1.5 scope
+# Offline conversion choice and 0.1.6 scope
 
 ## This version
 
@@ -14,7 +14,7 @@ Since 0.1.2 the app includes **bounded heuristic segmentation** using this same 
 
 This is not a full SKK interaction model, Mozc, or a contextual linguistic engine. It has no trained cost model, surrounding-context capture, interactive segment-boundary editor or sentence history. Incorrect homophones, boundaries and unsupported conjugations remain possible. The dictionary is medium-large, not the complete SKK L dictionary, and can lack modern vocabulary. Raw kana/katakana remain available, and words can still be selected individually.
 
-Phrase work stays off the UI thread. Input is limited to 64 BMP characters, segments to 16, beam to four and search to 8,192 steps with an 80-ms best-effort wall-time cutoff. Dictionary lookup caches exist only within one bounded search. At most one active reading, one latest pending reading and one pending result are kept; old fields/hidden input cancel publication. Reaching a budget returns no generated phrase instead of blocking input. Those budgets are code/test bounds, not S24 latency guarantees. Conversion uses only the keyboard's own composition, never surrounding host text.
+Phrase work stays off the UI thread. Input is limited to 64 BMP characters, segments to 16, beam to four and search to 8,192 steps with an 80-ms best-effort wall-time cutoff. Dictionary lookup caches exist only within one bounded search. At most one active reading, one latest pending reading and one pending result are kept; old fields/hidden input cancel publication. Reaching a budget returns no generated phrase instead of blocking input. Those budgets are code/test bounds, not S24 latency guarantees. Conversion uses only the keyboard-local reading, never surrounding host text. Reading and preview are not sent until explicit confirmation; this changes editing UX, not dictionary/conversion quality.
 
 Optional local learning remembers only explicit dictionary-exact lexical choices and can prioritize up to eight exact/prefix matches. It does not improve grammar or record phrases. See [LOCAL_LEARNING.md](LOCAL_LEARNING.md).
 

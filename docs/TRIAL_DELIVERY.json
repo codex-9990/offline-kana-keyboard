@@ -1,13 +1,13 @@
 {
   "artifact": {
-    "file_name": "offline-kana-keyboard-0.1.5-trial.apk",
+    "file_name": "offline-kana-keyboard-0.1.6-trial.apk",
     "size_bytes": 512678,
-    "sha256": "cb20b566e777f9f7ad67fc692ef6431441b2ddb1cd25bd966103519c6742aa45",
+    "sha256": "2ba3e39ca74d7da11015be808a1014ed4fcde6e67ff77b4cab332bfe3505d9ff",
     "development_trial": true,
     "debuggable": false,
-    "version_name": "0.1.5",
-    "version_code": 6,
-    "application_source_commit": "c186fb47a0f4ff086444d3908994291d4dabf213"
+    "version_name": "0.1.6",
+    "version_code": 7,
+    "application_source_commit": "0aa62da1c7428341556a035864fd715be2212d61"
   },
   "signer": {
     "certificate_sha256": "54d17f7d3afe53d1c06c74984aa976150b7336f1843ac0869fa28876856b84fe",
@@ -27,25 +27,28 @@
     ],
     "errors": 0,
     "warnings": 0,
-    "packaged_privacy_and_content_checks": "PASS: 19 checks",
+    "packaged_privacy_and_content_checks": "PASS: 20 checks",
     "requested_permissions": 0,
     "application_payload_comparison": "PASS: all 10 unsigned/signed ZIP entries byte-identical",
     "tamper_detection": "PASS: deliberately altered DEX rejected",
     "backup": "Disabled; cloud backup and device transfer exclusions unchanged",
-    "core_host_groups": "PASS: 78 groups (36 original + 42 feature)",
-    "android_api_adapter_groups": "PASS: 44 groups (14 adapter + 30 callback); native runtime NOT RUN",
-    "source_checks": "PASS: 17 checks",
-    "reported_composition_bug": "Reproduced before fix in callback-aware host fixture; fixed fixture passes; user app Android retest NOT RUN",
-    "review_regressions": "All three review traces reproduced before correction; final tests pass with conservative fencing; actual Android NOT RUN",
-    "bounded_sequence_cases": "PASS: 49,760 synthetic depth 0–4 sequences; ordered/coalesced callbacks; bounded model, not Android proof",
-    "callback_policy": "Current-position callbacks retire through latest matching operation. Ambiguous position reversals preserve text, end composition and block composing writes until fresh trusted EditorInfo; direct input remains possible."
+    "core_host_groups": "PASS: 78 groups (36 core + 42 feature; updated local-preedit semantics)",
+    "android_api_adapter_groups": "PASS: 37 groups (14 adapter + 23 local-preedit); native runtime NOT RUN",
+    "source_checks": "PASS: 18 checks",
+    "reported_composition_bug": "0.1.5 accepted-key loss reproduced as EXPECTED FAIL; local-preedit synthetic tests pass; reporting app/S24 resolution NOT established",
+    "review_regressions": "Historical EXPECTED FAIL traces retained; span-ownership tracker/latch deleted; native Android NOT RUN",
+    "bounded_sequence_cases": "PASS: 59,048 depth0-4 sequences; every accepted key and explicit confirmation exactly accounted; subsequent accepted input required; no lockout accepted",
+    "callback_policy": "Selection callbacks do not own, send, discard or fence local draft; explicit confirmation writes at actual host selection after finishing host-owned composing style",
+    "continuous_conversion": "PASS: 1,000 cycles, 4,000 accepted keys, 2,000 confirmations and complete host-text equality",
+    "ux_tradeoff": "Ordinary kana/English/symbols stay in keyboard until explicit confirmation; hide/fresh field cancels draft; same-session relayout preserves but framework hide/restart can cancel; restricted fields direct",
+    "initial_build": "FAIL: stale deleted generated class; corrected with isolated generated-output cleanup; final clean build PASS"
   },
   "delivery": {
     "channel": "User Library",
     "status": "PREPARED LOCALLY; replacement held pending independent review",
     "public_apk_release": "ABSENT",
     "receipt": "Delivery outcome tracked separately; no private Library identifiers published",
-    "library_write_for_0.1.5": "NOT PERFORMED"
+    "library_write_for_0.1.6": "NOT PERFORMED"
   },
   "android_runtime_qa": "NOT RUN",
   "device_installation_and_ime_activation": "NOT PERFORMED",
@@ -78,7 +81,8 @@
     "private_and_restricted_fields": "No learning or remembered-candidate lookup",
     "surrounding_text": "Not captured",
     "phrase_candidates": "Heuristic and never saved",
-    "android_private_storage_runtime": "NOT RUN"
+    "android_private_storage_runtime": "NOT RUN",
+    "preedit": "RAM only; maximum256codepoints; no surrounding reads/span reclamation; restricted/password direct"
   },
   "historical_0.1.2": {
     "file_name": "offline-kana-keyboard-0.1.2-trial.apk",
@@ -100,5 +104,18 @@
     "preserved_unchanged": true,
     "library_delivery": "NOT PERFORMED",
     "known_regression": "Coalesced preview/cancel current-position callback left stale earlier positions eligible"
+  },
+  "historical_0.1.5": {
+    "file_name": "offline-kana-keyboard-0.1.5-trial.apk",
+    "size_bytes": 512678,
+    "sha256": "cb20b566e777f9f7ad67fc692ef6431441b2ddb1cd25bd966103519c6742aa45",
+    "development_trial": true,
+    "debuggable": false,
+    "version_name": "0.1.5",
+    "version_code": 6,
+    "application_source_commit": "c186fb47a0f4ff086444d3908994291d4dabf213",
+    "preserved_unchanged": true,
+    "library_delivery": "NOT PERFORMED",
+    "known_regression": "Normal shorter conversion followed by accepted next kana before callbacks loses that key and can lock out further kana; release-blocking"
   }
 }
