@@ -10,6 +10,7 @@ import zipfile
 import xml.etree.ElementTree as ET
 from axml import decode
 from project_version import VERSION_CODE, VERSION_NAME
+from help_policy import help_checks
 
 ROOT = Path(__file__).resolve().parents[1]
 APK = Path(sys.argv[1]).resolve()
@@ -93,6 +94,8 @@ with zipfile.ZipFile(APK) as archive:
     dex = archive.read("classes.dex")
     strings = dex_strings(dex)
     (evidence / "dex-strings.txt").write_text("\n".join(strings))
+    for name, condition in help_checks(strings):
+        check("packaged " + name, condition)
     forbidden = ("Ljava/net/", "Landroid/webkit/", "Landroid/speech/", "Landroid/content/ClipboardManager;",
                  "Landroid/util/Log;", "Lcom/google/firebase/", "Lokhttp", "Lretrofit", "Lio/sentry/",
                  "CoreTests", "FeatureTests", "ConnectionEditorHostTests", "CompositionCallbackHostTests", "LocalPreeditHostTests", "ImeSmokeInstrumentation", "SyntheticOnly42")

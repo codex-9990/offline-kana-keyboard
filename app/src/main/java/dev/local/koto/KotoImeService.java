@@ -144,7 +144,10 @@ public final class KotoImeService extends InputMethodService {
     }
     private void clearCandidateState() {
         candidates = Collections.emptyList(); selected = -1;
-        candidateReading=""; candidateState=null; previewSource=null;
+        candidateReading=""; candidateState=null;
+        // A same-session relayout may keep the local preview. Retain its
+        // provenance so expiry/clear checks still run before rendering/commit.
+        if (session.preview().isEmpty()) previewSource=null;
         phraseReading=""; phraseCandidates=Collections.emptyList();
         if (phraseRequests!=null) phraseRequests.cancel();
         if (candidateRow != null) candidateRow.removeAllViews();
@@ -344,12 +347,11 @@ public final class KotoImeService extends InputMethodService {
     private void refreshCandidates() {
         if (candidateRow == null || status == null) return;
         boolean privacyReady=syncPrivacy();
-        updatePreedit();
         candidateRow.removeAllViews();
         LearningCoordinator.State learnedState=learning.state();
-        if (previewSource!=null && previewSource.learned && !currentLearned(previewSource,session.text())) {
-            if (session.cancelPreview()) previewSource=null;
-        }
+        // The projection first cancels an expired/cleared learned preview.
+        // Text and accessibility must describe the same next confirmation.
+        updatePreedit();
         String learningLabel=learnedState.busy ? "学習データ処理中" : learnedState.failed ? "保存エラー · 学習停止"
                 : session.incognito() || !session.policy().learning ? "私用 · 学習 OFF"
                 : learnedState.days==0 ? "学習 OFF" : "端末内学習 " + learnedState.days + "日";
@@ -367,8 +369,7 @@ public final class KotoImeService extends InputMethodService {
             clearCandidateState();
             TextView hint = new TextView(this); hint.setTextColor(0xffb5c8c9); hint.setTextSize(13);
             hint.setPadding(dp(8), 0, 0, 0); hint.setGravity(Gravity.CENTER_VERTICAL);
-            hint.setText(!privacyReady ? "入力欄が仮選択の解除を受け付けません。学習停止中です"
-                : session.policy().password ? "候補表示・入力の保存はありません"
+            hint.setText(session.policy().password ? "候補表示・入力の保存はありません"
                 : !session.policy().candidates ? "この入力欄では候補を使いません"
                 : session.mode() != InputSession.Mode.KANA ? "英字・記号もキーボード内で編集 · 確定で入力欄へ"
                 : "キーボード内の読み → 候補タップ / 確定で入力欄へ");
@@ -416,14 +417,15 @@ public final class KotoImeService extends InputMethodService {
     }
     private void updatePreedit() {
         if (preedit==null) return;
-        if (!session.policy().candidates) {
-            preedit.setText(""); preedit.setContentDescription(""); preedit.setVisibility(View.GONE); return;
+        boolean currentPreview=previewSource==null || !previewSource.learned || currentLearned(previewSource,session.text());
+        InputSession.Preedit shown=session.preedit(currentPreview);
+        if (!currentPreview) previewSource=null;
+        if (!shown.visible) {
+            preedit.setText(shown.text); preedit.setContentDescription(shown.description); preedit.setVisibility(View.GONE); return;
         }
         preedit.setVisibility(View.VISIBLE);
-        String value=session.displayed();
-        preedit.setText(value.isEmpty() ? "未確定の読み · 確定で入力欄へ" : value);
-        preedit.setContentDescription(value.isEmpty() ? "キーボード内の未確定入力はありません"
-            : session.preview().isEmpty() ? "未送信の読み: "+value : "仮選択: "+value+"、読み: "+session.text());
+        preedit.setText(shown.text.isEmpty() ? "未確定の読み · 確定で入力欄へ" : shown.text);
+        preedit.setContentDescription(shown.description);
         long revision=session.revision();
         preedit.post(()->{
             if (preedit!=null && revision==session.revision() && preedit.getLayout()!=null)

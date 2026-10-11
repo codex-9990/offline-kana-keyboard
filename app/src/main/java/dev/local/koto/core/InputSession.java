@@ -28,6 +28,22 @@ public final class InputSession {
     public String text() { return reading; }
     public String preview() { return preview; }
     public String displayed() { return preview.isEmpty() ? reading : preview; }
+    /** One immutable projection, captured only after stale learned preview cancellation. */
+    public static final class Preedit {
+        public final boolean visible;
+        public final String text,description;
+        private Preedit(boolean visible,String text,String description) {
+            this.visible=visible; this.text=text; this.description=description;
+        }
+    }
+    public Preedit preedit(boolean previewCurrent) {
+        if (!previewCurrent) cancelPreview();
+        if (!policy.candidates) return new Preedit(false,"","");
+        String value=displayed();
+        String description=value.isEmpty() ? "キーボード内の未確定入力はありません"
+            : preview.isEmpty() ? "未送信の読み: "+value : "仮選択: "+value+"、読み: "+reading;
+        return new Preedit(true,value,description);
+    }
     public long revision() { return revision; }
     public FieldPolicy policy() { return policy; }
     public Mode mode() { return mode; }

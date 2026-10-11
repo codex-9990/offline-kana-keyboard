@@ -3,6 +3,7 @@
 import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from help_policy import help_checks, java_text_values
 
 ROOT = Path(__file__).resolve().parents[1]
 A = "{http://schemas.android.com/apk/res/android}"
@@ -74,6 +75,8 @@ check("preedit stays local and no host span is created or reclaimed",
       not re.search(r"setComposingText|setComposingRegion|setSelection|EditorSelection",joined)
       and "boolean composing(" not in sources["InputSession.java"]
       and sources["InputSession.java"].count("editor.commit(")==3)
+for name, condition in help_checks(java_text_values(sources["SettingsActivity.java"]), joined):
+    check(name, condition)
 outward = re.findall(r"\bnew Intent\(([^)]*)\)", joined)
 check("intents limited to own settings and user-triggered system keyboard settings",
       sorted(outward) == ["Settings.ACTION_INPUT_METHOD_SETTINGS", "this, SettingsActivity.class"]

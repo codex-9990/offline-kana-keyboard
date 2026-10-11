@@ -146,6 +146,42 @@ public final class FeatureTests {
             yes(old.suggest("に",NORMAL,false,f.now).isEmpty()); no(f.pick("とうきょう","東京"));
             eq(0,f.coordinator.pendingCount());
         });
+        test("expired learned preview projects reading and accessibility before the same text is confirmed",()->{
+            Fixture f=new Fixture(); f.enable(1); yes(f.pick("にほん","日本")); f.run();
+            List<String> choices=new ArrayList<>(); Editor e=new Editor(); InputSession s=session(e,choices,1,0);
+            yes(s.type("にほん")); yes(s.preview("日本",s.revision())); eq("日本",s.preedit(true).text);
+            long old=s.revision(); f.now+=LearningData.DAY; eq(1,f.coordinator.state().entries.size());
+            s.relayout(); eq("日本",s.preview());
+            InputSession.Preedit shown=s.preedit(!f.suggest("にほん").isEmpty());
+            yes(shown.visible); eq("にほん",shown.text); eq("未送信の読み: にほん",shown.description); eq("",s.preview());
+            no(s.select("日本",old)); yes(s.confirm()); eq(shown.text,e.committed); yes(choices.isEmpty());
+            yes(s.type("ご")); eq("ご",s.preedit(true).text);
+        });
+        test("cleared or disabled learned preview projects the exact next confirmation before or after worker completion",()->{
+            for (int action=0;action<2;action++) for (boolean completed:new boolean[]{false,true}) {
+                Fixture f=new Fixture(); f.enable(7); yes(f.pick("にほん","日本")); f.run();
+                List<String> choices=new ArrayList<>(); Editor e=new Editor(); InputSession s=session(e,choices,1,0);
+                yes(s.type("にほん")); yes(s.preview("日本",s.revision())); eq("日本",s.preedit(true).text);
+                long old=s.revision(); yes(action==0 ? f.coordinator.clear() : f.coordinator.configure(0));
+                if (completed) f.run();
+                InputSession.Preedit shown=s.preedit(!f.suggest("にほん").isEmpty());
+                yes(shown.visible); eq("にほん",shown.text); eq("未送信の読み: にほん",shown.description);
+                no(s.select("日本",old)); yes(s.confirm()); eq(shown.text,e.committed); yes(choices.isEmpty());
+                f.run(); yes(f.suggest("にほん").isEmpty());
+            }
+        });
+        test("preedit projection keeps valid preview text exact and has no restricted-field echo",()->{
+            Editor e=new Editor(); InputSession s=session(e,new ArrayList<>(),1,0);
+            InputSession.Preedit empty=s.preedit(true); yes(empty.visible); eq("",empty.text);
+            eq("キーボード内の未確定入力はありません",empty.description);
+            s.type("にほん"); s.preview("日本",s.revision()); long revision=s.revision();
+            InputSession.Preedit shown=s.preedit(true); eq(revision,s.revision()); eq("日本",shown.text);
+            eq("仮選択: 日本、読み: にほん",shown.description); yes(s.confirm()); eq(shown.text,e.committed);
+            for (int type:new int[]{0x81,0x91,0xe1,0x12,2,0x80001}) {
+                s=session(new Editor(),new ArrayList<>(),type,0); yes(s.type("5"));
+                InputSession.Preedit hidden=s.preedit(true); no(hidden.visible); eq("",hidden.text); eq("",hidden.description);
+            }
+        });
         test("privacy transitions discard queued choices and never revive them when switched off",()->{
             Fixture f=new Fixture(); f.enable(7); f.pick("にほん","日本"); f.run(); int writes=f.storage.writes;
             LearningCoordinator.State stale=f.coordinator.state(); yes(f.pick("とうきょう","東京"));
