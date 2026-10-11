@@ -1,54 +1,55 @@
-# Verification report — corrected 0.1.1 trial
+# Verification report — 0.1.2 development trial
 
-The corrected APK builds, is not debuggable, and is signed with the same approved development certificate as 0.1.0. **Android installation, emulator behavior and Galaxy S24 usability remain NOT RUN.** No phone was installed on or enabled, and no SDK agreement was accepted. This is a tested development trial, not a validated daily-use keyboard or a guarantee of zero bugs.
-
-The exact delivered 0.1.0 APK was preserved and audited separately. [SECURITY_AUDIT.md](SECURITY_AUDIT.md) separates baseline findings from fixes. Application source is commit 9adf477030a17468feca1761f28791dbd7d8776c; later documentation commits do not alter that compiled application.
+Application source: **a0fac115d6fe042f390d82fb2ffd30bf57d88d5f**. The APK is signed with the existing approved certificate and is not debuggable. **Android emulator, Galaxy S24 and conventional Gradle/lint checks remain NOT RUN.** No device was changed, SDK agreement accepted, key created or public APK release published.
 
 ## Exact results
 
-| Check | Result | Method |
+| Check | Result | Scope |
 |---|---|---|
-| Existing JDK 17 / Gradle 8.9 startup | PASS | Existing toolchain; isolated writable cache |
-| Android SDK/NDK/adb/emulator/KVM | NOT AVAILABLE | No SDK, image, commands or /dev/kvm |
-| Conventional Gradle build / Android lint | NOT RUN | SDK preflight exits 78; no installation or terms accepted |
-| Dictionary provenance / deterministic assets | PASS | Pinned SHA-256; five deterministic outputs; 48,750 keys / 67,342 words |
-| Framework-free production core | PASS — 36 groups | test_host.sh; real dictionary and synthetic editor fixtures |
-| Actual ConnectionEditor API adapter | PASS — 14 groups | test_android_adapter.sh; Android API classes, synthetic InputConnection, injected key sender |
-| Source policy | PASS — 15 checks | Permissions, exports, storage, outward calls, controls-only preferences, debugging disabled |
-| Java API compilation / resource linking / DEX | PASS | Pinned API 35 jar, AAPT2, D8; only project classes packaged |
-| Actual signed APK policy / content | PASS — 19 checks | Binary manifest, version code 2 / 0.1.1, debuggable=false, backup, assets, DEX, alignment |
-| Gradle merged manifest | NOT RUN | Alternative build's actual packaged manifest inspected instead |
-| Signature / certificate | PASS | apksig 8.7.3; v2/v3, API 26–35, one expected signer, zero errors/warnings |
-| Signed/unsigned payload equality | PASS — all 10 ZIP entries | Every uncompressed application payload byte identical |
-| Tamper detection | PASS | DEX byte changed while retaining signature block; verifier rejected it; temporary copy removed |
-| Original 0.1.0 preservation / reverification | PASS | Original SHA-256 unchanged; signature and 17 historical APK checks pass |
-| Android installation / IME registration / MotionEvent | NOT RUN | No runtime available |
-| Android composing / preview / deletion / cursor / actions | NOT RUN | Host/API-port checks pass; actual editor/event-loop behavior unverified |
-| Android password / restricted-field behavior | NOT RUN | Host fixtures pass; actual fields unverified |
-| Android hide / repeat / rapid focus / rotation / restart | NOT RUN | State/gesture model passes; framework callbacks unverified |
-| Runtime logs / storage / OEM backup / transfer | NOT RUN | Source and compiled resources checked; runtime assertions not claimed |
-| Airplane-mode behavior | NOT RUN | Never treated as proof of privacy |
-| Galaxy S24 insets / haptics / accessibility / latency | NOT RUN | Physical device testing required |
-| Existing unrelated project | PASS | 175 tracked files unchanged; clean Git status |
+| Existing production-core regressions | PASS — 36 groups | Flick mappings, input/composition, password/restricted fields, actions, candidate/Unicode safety |
+| New feature regressions | PASS — 42 groups | Retention, quotas, queue bounds, stale choices, failure recovery, real host files, layouts, sensitivity, phrase proposals |
+| Production ConnectionEditor API adapter | PASS — 14 groups | Actual Android API signatures; synthetic InputConnection and injected key sender |
+| Source policy | PASS — 17 checks | No network/logging/surrounding reads; six non-text controls; file I/O confined to fixed-name no-backup adapter on worker |
+| Java API compilation/resources/DEX | PASS | Existing pinned AOSP API 35 jar, Maven AAPT2 and D8 |
+| Signed APK policy/content | PASS — 19 checks | Version code 3/name 0.1.2, zero permissions, debuggable=false, exports, backup XML, dictionary/assets, DEX/alignment |
+| Signature/certificate | PASS | apksig 8.7.3; v2/v3, API 26–35, one expected signer, zero errors/warnings |
+| Signed/unsigned payload equality | PASS — all 10 ZIP entries | Application payload bytes identical |
+| Tamper rejection | PASS | DEX byte changed with signature block retained; verifier rejected it; temporary copy removed |
+| Earlier APK preservation | PASS | Original 0.1.0 and 0.1.1 hashes unchanged |
+| Unrelated project preservation | PASS | 175 tracked files unchanged; clean Git status |
+| Gradle build/lint/merged manifest | NOT RUN | SDK absent; alternative build's actual packaged manifest inspected |
+| Android install/IME registration/native events | NOT RUN | No SDK/emulator/KVM; no physical-device approval |
+| Android controls/layout/sensitivity try pad | NOT RUN | Layout/gesture core and API compilation pass; actual View/One UI behavior unobserved |
+| Android learning storage/backup/device transfer | NOT RUN | Real Linux host file adapter tested; app UID/filesystem/OEM behavior unobserved |
+| Android rotation/focus/repeat/composition/editor actions | NOT RUN | Host state/adapter models pass; framework timing and native dispatch unobserved |
+| Runtime logs/files, airplane mode, S24 latency/insets/haptics | NOT RUN | No Android runtime assertions claimed |
 
-No unresolved failures remain in executed final checks. A historical 0.1.0 regression intentionally failed because the 64-candidate cap dropped both kana fallbacks for こう; the corrected implementation passes. Baseline failures were not relabelled as corrected-build passes.
+No unresolved failure remains in final executed checks. The first phrase regression exposed arbitrary okuri tails and a particle-absorbing homophone. Common-ending filtering and heuristic particle costs corrected the tested examples. This does not establish broad natural-language accuracy.
 
-## Scope and limits
+## New test evidence
 
-Core tests cover flick mappings/thresholds, modifiers, code-point composition deletion, modes, password variations, restricted flags, FORCE_ASCII, real word/okurigana lookup, bounded fallbacks, preview/cancellation/exactly-once commit, stale candidate rejection, lifecycle state clearing, failed writes, Shift, repeat/cancel decisions, all 95 printable ASCII characters and bounded custom-action labels.
+Tests verify Off/1/7/30/90 policies, expiry at the boundary, no renewal on lookup, shortening, no revival on extension/clock rollback, private/restricted fields, explicit successful choices only, prefix metadata retaining the complete reading, 10,000 repeated choices coalesced to one write, 32 pending choices/one worker/one notification, 128-entry and 32-KiB deterministic eviction, reload, malformed/oversized/duplicate/truncated storage, stale generations, clear during a pending or active write, Off/startup cleanup, simulated write/delete/policy failures, and cleanup guards.
 
-Adapter tests exercise the production ConnectionEditor against actual Android API signatures using synthetic InputConnection proxies. They cover selected/reversed-range deletion, code-point deletion, legacy fallback, failed writes, actions, preview integration and software-key flags. The injected key sender avoids native KeyEvent construction on the host JVM. They **do not run Binder, native KeyEvent dispatch, MotionEvent, the main event loop, InputMethodService callbacks or Samsung editors**.
+Independent source review found that settings could enable private mode without updating an editor that remained active. The corrected implementation listens for the setting, resynchronizes input-view start/render/edit paths, and gates learned reads/recording/worker choices on the live preference. Six added host regressions cover same-editor synchronization, stale taps/previews, unavailable preferences, rejected restoration, delayed callbacks, cancelled queues, rapid toggles and changes before persistence. A pre-toggle file operation past its final check can finish; earlier records are not erased by private mode. The Android lifecycle reproduction and framework callback ordering remain NOT RUN.
 
-Code-point deletion prevents splitting surrogate pairs when the editor honors the API. Whole combining-character and emoji ZWJ grapheme deletion is not guaranteed. No surrounding-text or clipboard reads were added.
+Real host-file tests exercise the production Java NIO adapter: atomic replacement, interrupted temporary-file removal, oversized-file rejection, and deletion that leaves synthetic dictionary/control files unchanged. These are Linux host tests, not Android private-storage tests or secure-erasure proofs.
 
-The signed manifest requests zero permissions, disables debugging/backup/cleartext traffic, exports only the launcher and BIND_INPUT_METHOD-protected IME, and keeps settings internal. No provider/receiver is present. Nine domains are excluded in legacy, cloud-backup and device-transfer XML. Dictionary/notices match reviewed source. Defined DEX classes are project-owned; no runtime/native library, key, framework jar or test marker is packaged. Source/DEX checks find no direct network, WebView, speech, clipboard, logging/telemetry or input-persistence path. Static absence checks are bounded evidence.
+Flick tests cover 8/22/40 dp at multiple densities, tap/flick boundary, all axes/diagonal ties, edge origins outside keys, threshold changes cancelling an active gesture and held-key cancellation without duplicate release. Layout tests exercise the production keypad/QWERTY specifications. Native MotionEvent, density metrics, accessibility and settings click dispatch remain unrun.
 
-The host receives text and can transmit it. Compromised OS/root and privileged observers remain outside the keyboard's boundary. No actual user typing data was used.
+Real SKK data verifies 日本に行きます, 今日は東京に行きます, and sushi + を食べます proposals. Oversized/cancelled conversion returns safely, generated phrases are ineligible for learning, kana fallbacks survive the cap, and the phrase worker discards old/cancelled fields while coalescing bursts. Phrase conversion is independent of learning storage.
 
-## Evidence and remaining gate
+## Privacy and proportional limits
 
-The verification archive contains iteration-0.1.1 host/adapter/build/APK-policy logs, signature/payload receipts, decoded signed manifest/backup resources, and separate audit-0.1.0 baseline evidence. Keys, credentials, private baseline inventories and Library identifiers are excluded. Public hashes are in [SIGNING.md](SIGNING.md) and [TRIAL_DELIVERY.json](TRIAL_DELIVERY.json).
+Learning now exists **only by opt-in**; historical absence-of-persistence statements apply to 0.1.0/0.1.1. Eligibility checks protect field flags and manual private mode, but cannot infer sensitivity in an ordinary unflagged field. Only dictionary-exact lexical choices can be saved; generated phrases and arbitrary typing cannot. App-private no-backup records are plaintext, not cryptographically protected against OS/root compromise.
 
-Source is published to [codex-9990/offline-kana-keyboard](https://github.com/codex-9990/offline-kana-keyboard). Delivery uses the user's Library; no public APK release was created. Source/report updates preserve their existing Library identities.
+Expired records are rejected from memory reads; file pruning is queued on start/use. An app that is stopped does not physically delete on the expiry clock tick. Clear success means the fixed files were removed through the file API; media-level secure erasure and copies already held by the host/OS are not promised. If storage/policy operations fail, the current process stops learning, reports failure and attempts cleanup. A successfully persisted cleanup guard makes the next process clear before use; durable changes cannot be guaranteed when all policy writes fail.
 
-The next required gate is [DEVICE_TEST_PLAN.md](DEVICE_TEST_PLAN.md). [RUNTIME_QA.md](RUNTIME_QA.md) lists exact official packages and approval prerequisites. Missing KVM may make software emulation slow; an emulator cannot establish Galaxy S24-specific behavior.
+Managed learning data is capped at 32 KiB, plus one 32-KiB temporary file during replacement. Preferences, filesystem metadata and Android-managed installation/runtime files are additional. No app-created disk dictionary cache or input log exists. The fixed dictionary is 1,209,080 uncompressed bytes; APK 512,678 bytes. Installed disk use and S24 latency are NOT MEASURED.
+
+The host receives text and can transmit it. Compromised OS/root and privileged observers remain outside scope. Whole combining/ZWJ grapheme deletion, selection callback timing and sustained typing remain device-test gates.
+
+## Deliverables and runtime gate
+
+Selected evidence includes iteration-0.1.2 host/adapter/build/APK-policy logs, signature/payload receipts, actual manifest/backup dumps, source publication receipt and unchanged-project proof. Source and report exports exclude keys, credentials, private baseline inventories, Library identifiers and build caches.
+
+See [LOCAL_LEARNING.md](LOCAL_LEARNING.md), [CONVERSION.md](CONVERSION.md), [SIGNING.md](SIGNING.md) and [DEVICE_TEST_PLAN.md](DEVICE_TEST_PLAN.md). The earlier [0.1.0/0.1.1 audit](SECURITY_AUDIT.md) is historical. This update has no independent Android runtime audit or daily-use readiness claim.
