@@ -1,30 +1,27 @@
-# Development-signed trial
+# Corrected development-signed trial
 
-A development-only signing identity was created following explicit user approval. The signed trial APK was verified and successfully delivered through the user's Library. Signing credentials are retained privately for compatible later trial updates and excluded from GitHub and all delivery archives. No device installation, IME activation or public APK release was performed.
+Version **0.1.1**, Android version code **2**, reuses the existing approved development certificate. The APK is **not debuggable**. Signing credentials are retained privately and excluded from GitHub and deliverables. No new key, device operation or public APK release was created for this iteration.
 
 ## Artifact and public certificate
 
-- Filename: `offline-kana-keyboard-0.1.0-debug-trial.apk`
-- Size: **484,006 bytes**
-- APK SHA-256: `1c966eb5f24993d214c0b3a3ef48b09c181a25fa8067ad3804091a1c25367cd3`
-- Public certificate SHA-256: `54d17f7d3afe53d1c06c74984aa976150b7336f1843ac0869fa28876856b84fe`
-- Signature verification: **PASS**, v2 and v3, API 26–35, one expected signer, zero errors and warnings.
-- Signed/unsigned payload comparison: **PASS**, all 10 ZIP entries identical, including manifest, DEX, resources and dictionary.
-- Signed APK privacy/content audit: **PASS**, all 17 checks; zero requested permissions and unchanged backup exclusions.
-- Deliberate DEX tampering: **PASS**, corrupted copy rejected by signature verification and removed.
-- Library delivery: **PASS**, successful save confirmed. No public download link or public APK release is provided.
-- Android installation and runtime QA: **NOT RUN**. Signature verification does not validate Android editor behavior or Galaxy S24 usability.
+- Filename: offline-kana-keyboard-0.1.1-trial.apk
+- Size: **488,102 bytes**
+- APK SHA-256: 8d890c246f16fd6cf74152c803e2cbedeba7482d1e723173f4376f68514cc60a
+- Public certificate SHA-256: 54d17f7d3afe53d1c06c74984aa976150b7336f1843ac0869fa28876856b84fe
+- Compiled application source: 9adf477030a17468feca1761f28791dbd7d8776c
+- Signature: **PASS**, v2/v3, API 26–35, one expected signer, zero errors/warnings.
+- Signed/unsigned payload comparison: **PASS**, all 10 ZIP entries byte-identical.
+- Signed APK privacy/content: **PASS**, 19 checks, including zero permissions and debuggable=false.
+- Deliberate DEX tampering: **PASS**, altered payload rejected; temporary copy removed.
+- Delivery route: user's Library; no public APK release.
+- Android installation/runtime QA: **NOT RUN**.
 
-The machine-readable [TRIAL_DELIVERY.json](TRIAL_DELIVERY.json) contains the public artifact, certificate and verification receipt. It contains no credentials, Library identifiers or private storage information.
+The original signed 0.1.0 APK remains unchanged: 484,006 bytes, SHA-256 1c966eb5f24993d214c0b3a3ef48b09c181a25fa8067ad3804091a1c25367cd3. It is debuggable and serves as the historical audit baseline. See [SECURITY_AUDIT.md](SECURITY_AUDIT.md).
 
-## Verification method
+## Method and updates
 
-Signing and independent verification used Google's **apksig 8.7.3** public `ApkSigner` and `ApkVerifier` APIs. See [AOSP apksig](https://android.googlesource.com/platform/tools/apksig/+/refs/heads/main/README.md) and [Android signing documentation](https://developer.android.com/tools/apksigner). The library came from official Google Maven under Apache-2.0; its published checksum was checked, and SHA-256 is recorded in [signing-toolchain.lock.json](signing-toolchain.lock.json). It is a build tool and is not packaged in the application. No Android SDK agreement was accepted or global software installed.
+Signing and independent cryptographic verification use Google's **apksig 8.7.3** public ApkSigner/ApkVerifier APIs from official Google Maven, Apache-2.0. Its hash is pinned in [signing-toolchain.lock.json](signing-toolchain.lock.json); it is not packaged in the app. See [AOSP apksig](https://android.googlesource.com/platform/tools/apksig/+/refs/heads/main/README.md) and [Android signing documentation](https://developer.android.com/tools/apksigner).
 
-The signing operation kept the unsigned build separate. Verification checked the signed output against the expected public certificate fingerprint. v2 and v3 are enabled; v4 and key rotation are not used. The resource table remains stored and aligned to four bytes. All application payload bytes and privacy restrictions remain unchanged.
+Unsigned output is retained separately. Verification requires the expected certificate and checks API 26–35 with v2/v3; v4 and key rotation are not used. Resources remain stored/four-byte aligned. No SDK agreement was accepted to use these Maven tools.
 
-## Trial updates
-
-The regular build commands still produce an unsigned APK. Approved trial builds can be signed separately with the retained development identity. Later compatible updates must preserve the signing certificate and increase the Android version code as needed. Do not modify an APK after signing, and verify the resulting signature and artifact hash before distribution.
-
-This trial remains a prototype with word-level SKK conversion. Follow [DEVICE_TEST_PLAN.md](DEVICE_TEST_PLAN.md) before relying on it for daily use. Host tests and signature verification do not replace Android runtime testing.
+Regular builds stay unsigned. Separately signed updates must preserve the certificate and increase version code. Keep credentials out of exports, never modify a signed APK, and verify its hash before delivery. Signature validation establishes integrity and identity, not runtime correctness or daily-use readiness. Follow [DEVICE_TEST_PLAN.md](DEVICE_TEST_PLAN.md).

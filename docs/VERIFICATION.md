@@ -1,77 +1,54 @@
-# Verification report — 2026-10-11
+# Verification report — corrected 0.1.1 trial
 
-## Delivered state
+The corrected APK builds, is not debuggable, and is signed with the same approved development certificate as 0.1.0. **Android installation, emulator behavior and Galaxy S24 usability remain NOT RUN.** No phone was installed on or enabled, and no SDK agreement was accepted. This is a tested development trial, not a validated daily-use keyboard or a guarantee of zero bugs.
 
-The local first version compiles to an **unsigned debug APK** with the complete implemented UI and bundled SKK-ML word dictionary. Following explicit user approval, a separate **development-signed trial APK** was produced, its signatures verified and its Library delivery confirmed. The development signing identity is retained privately for compatible later trial updates. No private key, password or private storage detail is included in any deliverable. The app has not run in an Android emulator or on a Galaxy S24. No physical device was installed on or enabled. No SDK agreement was accepted.
+The exact delivered 0.1.0 APK was preserved and audited separately. [SECURITY_AUDIT.md](SECURITY_AUDIT.md) separates baseline findings from fixes. Application source is commit 9adf477030a17468feca1761f28791dbd7d8776c; later documentation commits do not alter that compiled application.
 
-The final compiled package requests zero permissions. The host app remains able to transmit text supplied to its editor; the keyboard's boundary does not cover that app or a compromised OS.
+## Exact results
 
-## Results
-
-| Check | Exact result | Evidence/method |
+| Check | Result | Method |
 |---|---|---|
-| Java 17 toolchain | PASS | Temurin 17.0.20.1+1 javac/java version checks |
-| Gradle 8.9 startup | PASS after recovery | Project-owned cache resolves default native-service initialization failure |
-| Android SDK/NDK/adb/emulator/KVM | NOT AVAILABLE | Files/commands/device inspection; none found |
-| SDK agreement consent | PENDING, no agreement accepted | Saved setup records and user instruction; build does not depend on agreement acceptance |
-| Conventional Gradle build/lint | NOT RUN | `build_debug.sh` preflight exits 78 before Gradle due missing SDK |
-| SKK-ML original bytes | PASS | Pinned Git blob and SHA-256 verified |
-| Dictionary assets/notices | PASS — 5 deterministic artifacts | `prepare_dictionary.py --check`; 48,750 keys / 67,342 candidates |
-| Host input/conversion tests | PASS — 19 groups | `test_host.sh`, actual bundled dictionary plus synthetic fixtures |
-| Static privacy policy checks | PASS — 14 checks | Source manifest, storage writes, outward calls, dependencies and backup rules |
-| Java Android API compilation | PASS | All app and generated resource classes compile against AOSP API 35 reference |
-| Resources and APK linking | PASS | Pinned Google Maven AAPT2 |
-| DEX generation | PASS | Pinned R8/D8; only project classes supplied as inputs |
-| Packaged APK privacy/content checks | PASS — 17 checks | Actual binary XML, ZIP assets, DEX strings/class definitions and resource alignment |
-| Android Gradle merged manifest | NOT RUN | SDK build unavailable; successful alternative build's packaged manifest inspected directly |
-| Development signing identity | PASS, explicitly approved | Identity retained privately for compatible trial updates; private material excluded from publication and archives |
-| Trial APK signature validation | PASS | Google apksig 8.7.3; API 26–35; v2/v3; one expected signer; zero errors/warnings |
-| Signed/unsigned application payload equality | PASS — all 10 ZIP entries | Manifest, DEX, resources and assets byte-identical; unchanged zero-permission and backup policy |
-| Tamper detection | PASS | Deliberately altered DEX payload rejected by cryptographic signature verification |
-| Signed trial Library delivery | PASS | Successful Library create confirmed; public-only receipt in `TRIAL_DELIVERY.json` |
-| Installation and IME registration | NOT RUN | No emulator; no actual-device installation approval |
-| Android flick gesture/multitouch/cancel | NOT RUN | Mapping algorithm tested on host; MotionEvent/UI not run |
-| Android composing, deletion, candidate selection, modes | NOT RUN | Host port/state models pass; Android editor behavior unverified |
-| Android password fields and restricted learning flags | NOT RUN | Host policy/session tests pass; actual editor fields unverified |
-| Android rotation and service lifecycle | NOT RUN | Host lifecycle model passes; framework callbacks unverified |
-| Runtime logs, filesystem, OEM backup/device transfer | NOT RUN | Source/compiled-resource checks pass; no runtime assertions claimed |
-| Airplane-mode functionality | NOT RUN | No emulator/device; not treated as proof of privacy |
-| Galaxy S24 haptics/insets/latency | NOT RUN | Native implementation compiled; actual One UI/device verification required |
-| Existing unrelated project | PASS | All 175 tracked files byte-identical to initial baseline and git status clean |
-| Initial GitHub destination preflight | PASS | User-created public repository `codex-9990/offline-kana-keyboard`, ID 1413877097; initial empty-repository and push-permission checks passed |
+| Existing JDK 17 / Gradle 8.9 startup | PASS | Existing toolchain; isolated writable cache |
+| Android SDK/NDK/adb/emulator/KVM | NOT AVAILABLE | No SDK, image, commands or /dev/kvm |
+| Conventional Gradle build / Android lint | NOT RUN | SDK preflight exits 78; no installation or terms accepted |
+| Dictionary provenance / deterministic assets | PASS | Pinned SHA-256; five deterministic outputs; 48,750 keys / 67,342 words |
+| Framework-free production core | PASS — 36 groups | test_host.sh; real dictionary and synthetic editor fixtures |
+| Actual ConnectionEditor API adapter | PASS — 14 groups | test_android_adapter.sh; Android API classes, synthetic InputConnection, injected key sender |
+| Source policy | PASS — 15 checks | Permissions, exports, storage, outward calls, controls-only preferences, debugging disabled |
+| Java API compilation / resource linking / DEX | PASS | Pinned API 35 jar, AAPT2, D8; only project classes packaged |
+| Actual signed APK policy / content | PASS — 19 checks | Binary manifest, version code 2 / 0.1.1, debuggable=false, backup, assets, DEX, alignment |
+| Gradle merged manifest | NOT RUN | Alternative build's actual packaged manifest inspected instead |
+| Signature / certificate | PASS | apksig 8.7.3; v2/v3, API 26–35, one expected signer, zero errors/warnings |
+| Signed/unsigned payload equality | PASS — all 10 ZIP entries | Every uncompressed application payload byte identical |
+| Tamper detection | PASS | DEX byte changed while retaining signature block; verifier rejected it; temporary copy removed |
+| Original 0.1.0 preservation / reverification | PASS | Original SHA-256 unchanged; signature and 17 historical APK checks pass |
+| Android installation / IME registration / MotionEvent | NOT RUN | No runtime available |
+| Android composing / preview / deletion / cursor / actions | NOT RUN | Host/API-port checks pass; actual editor/event-loop behavior unverified |
+| Android password / restricted-field behavior | NOT RUN | Host fixtures pass; actual fields unverified |
+| Android hide / repeat / rapid focus / rotation / restart | NOT RUN | State/gesture model passes; framework callbacks unverified |
+| Runtime logs / storage / OEM backup / transfer | NOT RUN | Source and compiled resources checked; runtime assertions not claimed |
+| Airplane-mode behavior | NOT RUN | Never treated as proof of privacy |
+| Galaxy S24 insets / haptics / accessibility / latency | NOT RUN | Physical device testing required |
+| Existing unrelated project | PASS | 175 tracked files unchanged; clean Git status |
 
-There are **no unresolved failures in executed final host/build/artifact checks**. Unrun Android/device checks remain blockers to claiming a validated daily-use keyboard.
+No unresolved failures remain in executed final checks. A historical 0.1.0 regression intentionally failed because the 64-candidate cap dropped both kana fallbacks for こう; the corrected implementation passes. Baseline failures were not relabelled as corrected-build passes.
 
-## Host coverage detail
+## Scope and limits
 
-The 19 passing groups cover all twelve keys/five directions, gesture thresholds/axes/diagonals, modifier cycles, composing/candidate replacement, Unicode codepoint deletion, mode changes and one-shot Shift, four Android password variations, NO_PERSONALIZED_LEARNING, numeric/phone/date/no-suggestions fields, email/URI defaults, cursor behavior, direct space insertion, outside selections/hide, editor changes, a rotation lifecycle model, failed host writes, bounded composition, dictionary expression handling/immutability and real bundled word/okurigana candidates.
+Core tests cover flick mappings/thresholds, modifiers, code-point composition deletion, modes, password variations, restricted flags, FORCE_ASCII, real word/okurigana lookup, bounded fallbacks, preview/cancellation/exactly-once commit, stale candidate rejection, lifecycle state clearing, failed writes, Shift, repeat/cancel decisions, all 95 printable ASCII characters and bounded custom-action labels.
 
-These tests exercise the exact framework-free production core through a synthetic editor port. They do not establish InputConnection, InputMethodService, MotionEvent, Samsung editor or window/inset behavior.
+Adapter tests exercise the production ConnectionEditor against actual Android API signatures using synthetic InputConnection proxies. They cover selected/reversed-range deletion, code-point deletion, legacy fallback, failed writes, actions, preview integration and software-key flags. The injected key sender avoids native KeyEvent construction on the host JVM. They **do not run Binder, native KeyEvent dispatch, MotionEvent, the main event loop, InputMethodService callbacks or Samsung editors**.
 
-## APK inspection detail
+Code-point deletion prevents splitting surrogate pairs when the editor honors the API. Whole combining-character and emoji ZWJ grapheme deletion is not guaranteed. No surrounding-text or clipboard reads were added.
 
-Binary XML decoding confirms package `dev.local.koto`, minimum API 26, target API 35, debuggable build, allowBackup=false and usesCleartextTraffic=false. Only the launcher and BIND_INPUT_METHOD-protected IME are exported; settings are internal; no provider/receiver is present. All nine backup domains are excluded in legacy, cloud and device-transfer resources. All 17 checks also passed on the signed trial APK. Signing did not modify any application payload bytes.
+The signed manifest requests zero permissions, disables debugging/backup/cleartext traffic, exports only the launcher and BIND_INPUT_METHOD-protected IME, and keeps settings internal. No provider/receiver is present. Nine domains are excluded in legacy, cloud-backup and device-transfer XML. Dictionary/notices match reviewed source. Defined DEX classes are project-owned; no runtime/native library, key, framework jar or test marker is packaged. Source/DEX checks find no direct network, WebView, speech, clipboard, logging/telemetry or input-persistence path. Static absence checks are bounded evidence.
 
-The packaged dictionary, NOTICE and GPL text match the reviewed source bytes. DEX references contain no network, WebView, speech, clipboard, logging, telemetry or host-test markers. Every defined DEX class belongs to the project namespace. No native library, signing key or build-tool/framework jar is packaged. The resources table is stored and four-byte aligned. This is static inspection, not a comprehensive security audit.
+The host receives text and can transmit it. Compromised OS/root and privileged observers remain outside the keyboard's boundary. No actual user typing data was used.
 
-## Recovery record
+## Evidence and remaining gate
 
-The first default-cache Gradle version check failed to load native services. It passed using the new project's writable cache and existing JDK. The standard SDK build preflight remained blocked as designed.
+The verification archive contains iteration-0.1.1 host/adapter/build/APK-policy logs, signature/payload receipts, decoded signed manifest/backup resources, and separate audit-0.1.0 baseline evidence. Keys, credentials, private baseline inventories and Library identifiers are excluded. Public hashes are in [SIGNING.md](SIGNING.md) and [TRIAL_DELIVERY.json](TRIAL_DELIVERY.json).
 
-The first alternative APK compiled successfully but its audit stopped because the checker expected an older AAPT2 text format (`sdkVersion` and typed hexadecimal attributes). The produced manifest already had correct SDK values. The audit was changed to decode structured binary XML, then all 17 packaged checks passed. Subsequent source changes were rebuilt and rechecked successfully.
+Source is published to [codex-9990/offline-kana-keyboard](https://github.com/codex-9990/offline-kana-keyboard). Delivery uses the user's Library; no public APK release was created. Source/report updates preserve their existing Library identities.
 
-## Host performance sample
-
-One synthetic JVM run on this environment: dictionary load **220.411 ms**; 10,000 warm lookups had median **0.004 ms**, p95 **0.013 ms**, after 1,000 warm-up lookups. This is not an S24 benchmark or an Android touch-to-text/cold-start measurement. The Android dictionary load is deliberately off the UI thread.
-
-## Repository access result
-
-The user created [codex-9990/offline-kana-keyboard](https://github.com/codex-9990/offline-kana-keyboard) and authorized source publication. The initial destination check confirmed repository ID **1413877097**, public visibility, an empty default branch and push permission. Initial source publication succeeded at commit `ac0e954e20086fd7bf101e1087e70fb420ff2bcc`. Signing and delivery documentation is updated separately without application-code changes. No scopes, credentials or network permissions were added.
-
-The publication export contains only the reviewed project source, dictionary, license/notices, build utilities and public documentation. It excludes APKs, signing files, build caches, private storage details, private environment records and the unrelated project. The publication receipt records the remote commit and comparison of its complete tree with the reviewed local files. No APK, private signing material or public APK release is included.
-
-## Evidence locations and delivery
-
-The selected verification archive contains final `host-tests.txt`, `host-benchmark.txt`, `aosp-build.txt`, decoded `apk-manifest.xml`, AAPT manifest/badging text, compiled backup XML dumps and an unchanged-project receipt. The signed trial adds public `trial-signature.json`, `trial-apk-policy.txt` and `trial-payload-check.txt`. Public certificate and artifact SHA-256 values are documented in [SIGNING.md](SIGNING.md) and [TRIAL_DELIVERY.json](TRIAL_DELIVERY.json). Private baseline records and private delivery/storage metadata are excluded.
-
-`dist/` contains the unsigned debug APK, development-signed trial APK, an allowlisted source ZIP, a selected verification ZIP, a verification/report ZIP and SHA-256 receipts. The source ZIP excludes `.git`, build caches, APKs, signing files, baseline records and private environment files. Source and report archives are saved in the user's Library; updates replace those same Library files. The signed trial APK is delivered through the user's Library. No public APK release or device operation was performed. Signature verification establishes package integrity and signing identity; Android installation and runtime behavior remain **NOT RUN**.
+The next required gate is [DEVICE_TEST_PLAN.md](DEVICE_TEST_PLAN.md). [RUNTIME_QA.md](RUNTIME_QA.md) lists exact official packages and approval prerequisites. Missing KVM may make software emulation slow; an emulator cannot establish Galaxy S24-specific behavior.

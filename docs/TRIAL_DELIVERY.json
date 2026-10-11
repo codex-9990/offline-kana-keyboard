@@ -1,10 +1,13 @@
 {
   "artifact": {
-    "file_name": "offline-kana-keyboard-0.1.0-debug-trial.apk",
-    "size_bytes": 484006,
-    "sha256": "1c966eb5f24993d214c0b3a3ef48b09c181a25fa8067ad3804091a1c25367cd3",
+    "file_name": "offline-kana-keyboard-0.1.1-trial.apk",
+    "size_bytes": 488102,
+    "sha256": "8d890c246f16fd6cf74152c803e2cbedeba7482d1e723173f4376f68514cc60a",
     "development_trial": true,
-    "debuggable": true
+    "debuggable": false,
+    "version_name": "0.1.1",
+    "version_code": 2,
+    "application_source_commit": "9adf477030a17468feca1761f28791dbd7d8776c"
   },
   "signer": {
     "certificate_sha256": "54d17f7d3afe53d1c06c74984aa976150b7336f1843ac0869fa28876856b84fe",
@@ -24,17 +27,26 @@
     ],
     "errors": 0,
     "warnings": 0,
-    "packaged_privacy_and_content_checks": "PASS: 17 checks",
+    "packaged_privacy_and_content_checks": "PASS: 19 checks",
     "requested_permissions": 0,
     "application_payload_comparison": "PASS: all 10 unsigned/signed ZIP entries byte-identical",
     "tamper_detection": "PASS: deliberately altered DEX rejected",
-    "backup": "Disabled; cloud backup and device transfer exclusions unchanged"
+    "backup": "Disabled; cloud backup and device transfer exclusions unchanged",
+    "core_host_groups": "PASS: 36 groups",
+    "android_api_adapter_groups": "PASS: 14 synthetic groups; native event dispatch NOT RUN",
+    "source_checks": "PASS: 15 checks"
   },
   "delivery": {
     "channel": "User Library",
-    "status": "succeeded",
-    "public_apk_release": "ABSENT"
+    "public_apk_release": "ABSENT",
+    "receipt": "Delivery outcome tracked separately; no private Library identifiers published"
   },
   "android_runtime_qa": "NOT RUN",
-  "device_installation_and_ime_activation": "NOT PERFORMED"
+  "device_installation_and_ime_activation": "NOT PERFORMED",
+  "historical_0.1.0": {
+    "file_name": "offline-kana-keyboard-0.1.0-debug-trial.apk",
+    "sha256": "1c966eb5f24993d214c0b3a3ef48b09c181a25fa8067ad3804091a1c25367cd3",
+    "debuggable": true,
+    "preserved_unchanged": true
+  }
 }

@@ -16,17 +16,18 @@ For emulator UI QA, dump a step-specific UI tree with `adb -s "$serial" exec-out
 | Flicks | Exercise center/left/up/right/down for all 12 keys; check や and わ special directions | NOT RUN |
 | Cancel/multitouch | Cancel a drag and add a second pointer; no character should commit | NOT RUN |
 | Compose/convert | Enter にほん; host shows composing kana; choose 日本; composing span clears with no duplicate | NOT RUN |
-| Candidate cycle | Enter はし; 変換 highlights/cycles; 確定 commits highlighted candidate; horizontal strip remains usable | NOT RUN |
+| Candidate cycle | Enter はし; 変換 previews/cycles in the host; 確定 commits once; typing/mode/cursor commits the preview; Backspace first restores kana | NOT RUN |
+| Bounded fallback | Enter こう and しょう; both kana fallbacks remain reachable within 64 candidates | NOT RUN |
 | Okurigana | Enter たべる and かく; candidates include 食べる and 書く | NOT RUN |
-| Deletion | Delete within composition, committed text, selected text and emoji; hold delete; no repeat after release/cancel | NOT RUN |
+| Deletion | Delete within composition, committed text, selected text and emoji; verify surrogate safety and combining/ZWJ clusters; hold delete; no repeat after release/cancel/hide/field change | NOT RUN |
 | Mode/Shift | Kana → English commits once; one-shot Shift resets; switches to symbols and back behave | NOT RUN |
 | Cursor | Left/right within surrounding host text; composition commits first; hold and release arrows | NOT RUN |
-| Host actions | Search, Next, Done, Send and multiline/no-enter-action; composing Enter confirms before editor action | NOT RUN |
-| Password | Text, visible, web and number passwords: no candidate or on-keyboard text echo, direct input works | NOT RUN |
+| Host actions | Search, Next, Done, Send, Previous and multiline/no-enter-action; custom action ID 42/name 保存 shows 実行/保存 and executes 42; composing Enter confirms first | NOT RUN |
+| Password | Text, visible, web and number passwords: no candidate or on-keyboard text echo; enter synthetic A$1 and all printable ASCII; switch both symbol pages; distinguish ~ and 〜 | NOT RUN |
 | Restricted fields | NO_PERSONALIZED_LEARNING leaves no history; NO_SUGGESTIONS shows no composition/candidates | NOT RUN |
-| Email/URI | English appears by default; punctuation, @ and digits usable | NOT RUN |
+| Email/URI/ASCII | English appears by default; FORCE_ASCII respected; punctuation, @ and digits usable | NOT RUN |
 | Rotation | Portrait/landscape during composition: text retained once in host, transient state cleared, no fullscreen extract | NOT RUN |
-| Lifecycle | Switch fields/apps, hide/show, stop/restart IME process; no text appears in a new field | NOT RUN |
+| Lifecycle | Switch fields/apps rapidly, including the same kana reading twice; hide while holding delete; stop/restart IME process; stale candidate taps and repeat callbacks do not affect the next field | NOT RUN |
 | Controls | Height extremes, default 58 dp, landscape 44 dp; haptic off/on and global Android setting | NOT RUN |
 | Insets/S24 | Gesture/button navigation, status of IME padding, cutout, accessibility scaling and One UI layouts | NOT RUN |
 | Local persistence | After synthetic marker typing, inspect app storage and backup/transfer eligibility; only controls preferences expected | NOT RUN |

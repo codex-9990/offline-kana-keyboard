@@ -4,7 +4,7 @@
 
 Koto performs kana input and dictionary lookup locally and adds no external destination for typing data. Its data flow is user gesture → IME RAM → Android InputConnection → the foreground host editor. A licensed dictionary is read from APK assets; no conversion download or cloud request exists. The normal Android host-editor exchange is necessary for a keyboard to work.
 
-This is a reviewed prototype, not an independent security audit or an absolute guarantee against a compromised device. Airplane-mode operation would be useful functional evidence, but would not establish the privacy boundary by itself.
+This is a development prototype. The [baseline artifact audit and corrected-build verification](SECURITY_AUDIT.md) document their exact scope; they do not establish an absolute guarantee against a compromised device. Airplane-mode operation would be useful functional evidence, but would not establish the privacy boundary by itself.
 
 ## Assets and possible observers
 
@@ -27,6 +27,7 @@ Potential observers include an untrusted network SDK, a malicious app binding th
 | Logs | No runtime log sites or text-bearing error uploads | Source and DEX checks; runtime logcat not run |
 | Dictionary data | Pinned upstream bytes; no Lisp evaluation, plugins, dynamic code or update downloader | Hash, deterministic derivation and lookup tests |
 | Input lifecycle | Clear transient state on hidden view, editor finish, focus changes and configuration changes | Host model tests; actual service lifecycle/rotation not run |
+| Debug access | Version 0.1.1 explicitly disables debugging in both build routes | Source plus actual signed APK binary manifest; authorized privileged OS access remains out of scope |
 
 ## Limits
 
@@ -36,7 +37,7 @@ A compromised OS can disregard manifests, inspect memory, capture input or trans
 
 Java String objects and Binder/editor copies cannot be reliably wiped. Clearing session/candidate references reduces retention but is not secure erasure. Accessibility and screen capture can observe normal on-screen candidates; password candidates are suppressed. The public launcher intentionally ignores inbound extras and stores no supplied input data.
 
-The produced unsigned APK is a debug build. A signed debug build would permit authorized debugging access. Production signing, hardening, distribution and a public APK release require separate decisions. Private signing files must remain outside source/export archives.
+The original delivered 0.1.0 APK is debuggable and is retained unchanged as the audit baseline. The corrected 0.1.1 APK is not debuggable and is signed with the same approved development certificate. It remains a development trial; Android installation, runtime behavior and OEM transfer have not been tested. A public APK release requires separate approval. Signing files stay outside source/export archives.
 
 ## Before adding features
 

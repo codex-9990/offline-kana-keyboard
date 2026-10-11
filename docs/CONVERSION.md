@@ -8,7 +8,7 @@ The source dictionary's own header explicitly applies GPL v2 or later. The new a
 
 `scripts/prepare_dictionary.py` produces 48,750 keys and 67,342 candidates. The transform strips annotations and skips unsupported Lisp/numeric expressions instead of evaluating them. None were removed from this particular ML source. Runtime lookup does not mutate the dictionary or rank candidates using typing history.
 
-The lookup handles exact readings, basic okurigana by matching a stem and its SKK Roman initial, and hiragana/katakana fallback. Examples checked against the real bundled data: 日本, 東京, 漢字, 学校, 橋, 食べる, 書く. Unknown input still commits as kana. At most 64 candidates are shown; extremely ambiguous readings may omit late dictionary candidates.
+The lookup handles exact readings, basic okurigana by matching a stem and its SKK Roman initial, and hiragana/katakana fallback. Examples checked against the real bundled data: 日本, 東京, 漢字, 学校, 橋, 食べる, 書く. Unknown input still commits as kana. At most 64 candidates are shown. Version 0.1.1 reserves space for the distinct hiragana/katakana fallbacks, including ambiguous readings such as `こう`; late dictionary words can still be omitted.
 
 This is not a full SKK interaction model and not a contextual conversion engine. There is no sentence segmentation, linguistic cost model, phrase ranking or adaptive learning. Some mechanically formed okurigana candidates can be wrong. The dictionary is medium-large, not the complete SKK L dictionary, and its source data is older than modern Mozc vocabularies. Type and select one word at a time.
 
