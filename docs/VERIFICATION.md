@@ -34,7 +34,7 @@ The final compiled package requests zero permissions. The host app remains able 
 | Airplane-mode functionality | NOT RUN | No emulator/device; not treated as proof of privacy |
 | Galaxy S24 haptics/insets/latency | NOT RUN | Native implementation compiled; actual One UI/device verification required |
 | Existing unrelated project | PASS | All 175 tracked files byte-identical to initial baseline and git status clean |
-| GitHub repository creation | NOT ATTEMPTED, PAUSED | Requested destination checked; no remote mutation or push |
+| GitHub destination preflight | PASS | User-created public repository `codex-9990/offline-kana-keyboard`, ID 1413877097; empty repository and connected push permission confirmed |
 
 There are **no unresolved failures in executed final host/build/artifact checks**. Unrun Android/device checks remain blockers to claiming a validated daily-use keyboard.
 
@@ -62,12 +62,12 @@ One synthetic JVM run on this environment: dictionary load **220.411 ms**; 10,00
 
 ## Repository access result
 
-The connected GitHub reader's GET for `codex-9990/offline-kana-keyboard` returned `404 Not Found`. A 404 can also represent inaccessible private content, so availability is not assumed. The connector exposes no repository creation action. Existing GitHub CLI read calls to the authenticated user and organization membership endpoints returned `Forbidden` from this environment before a GitHub permission result could be obtained. No scopes, credentials or network permissions were added.
+The user created [codex-9990/offline-kana-keyboard](https://github.com/codex-9990/offline-kana-keyboard) and authorized initial source publication. A connected read confirmed repository ID **1413877097**, public visibility, an empty default branch and push permission. Earlier unavailable-repository and blocked CLI reads were superseded by this successful connector inspection. No scopes, credentials or network permissions were added.
 
-The parent then requested a pause on repository creation/push while checking another route. **No create request, remote repository, remote URL verification, push, merge, or public APK release was performed here.** Creation rights are unverified; this is not a claim that the connected account lacks organization membership.
+The publication export contains only the reviewed project source, dictionary, license/notices and build utilities. It excludes APKs, signing files, build caches, private environment records and the unrelated project. The final publication receipt records the remote commit and comparison of its complete tree with the reviewed local files. No public APK release or signing step is included.
 
 ## Evidence locations and delivery
 
 The private workspace `verification/` contains final `host-tests.txt`, `host-benchmark.txt`, `aosp-build.txt`, decoded `apk-manifest.xml`, AAPT manifest/badging text, compiled backup XML dumps, DEX string inspection and an unchanged-project receipt. It also contains a local-only baseline hash map of the unrelated project; that map must not be included in public/source exports.
 
-`dist/` contains the unsigned debug APK, an allowlisted source ZIP, a selected verification ZIP, and SHA-256 receipts once packaging is complete. The source ZIP excludes `.git`, build caches, APKs, signing files, baseline records and private environment files. Use private workspace downloads for APK delivery. An installable signed APK is pending explicit approval to use/create a test identity, and must not be published as a public release without a separate decision.
+`dist/` contains the unsigned debug APK, an allowlisted source ZIP, a selected verification ZIP, a verification/report ZIP and SHA-256 receipts. The source ZIP excludes `.git`, build caches, APKs, signing files, baseline records and private environment files. Source and report archives are saved in the user's Library; publication updates replace those same Library files. Use private workspace downloads for APK delivery. An installable signed APK is pending explicit approval to use/create a test identity, and must not be published as a public release without a separate decision.

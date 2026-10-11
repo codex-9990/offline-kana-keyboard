@@ -70,4 +70,4 @@ Application code, scripts, documentation and bundled SKK dictionary: **GPL-2.0-o
 
 The Gradle wrapper/scripts are separate Apache-2.0 build utilities, with their license in `third_party/gradle-wrapper/`. No Sumire/KazumaProject code or binaries were adopted. No Mozc library is shipped. See [conversion decisions and future integration](docs/CONVERSION.md).
 
-Requested GitHub destination: `codex-9990/offline-kana-keyboard`. Repository creation and pushing are currently paused; this README is not a claim that a remote repository exists. No public APK release is authorized.
+Source repository: [codex-9990/offline-kana-keyboard](https://github.com/codex-9990/offline-kana-keyboard). The user created this public repository for the reviewed source, license, build instructions and verification documentation. APK delivery remains private, and signing requires separate approval.
