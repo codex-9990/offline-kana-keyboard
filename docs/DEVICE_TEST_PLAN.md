@@ -1,4 +1,4 @@
-# Android emulator and Galaxy S24 test plan — 0.1.7
+# Android emulator and Galaxy S24 test plan — 0.1.8
 
 **Every row below is NOT RUN on Android.** Host-model and artifact checks are in [VERIFICATION.md](VERIFICATION.md). Use synthetic text only; no actual user typing data is needed. The browser URL/search bar and a page field fail while a browser notepad works;browser name, actual flags and Android/One UI versions remain unknown.
 
@@ -20,9 +20,15 @@ For UI QA derive gesture/tap bounds from a step-specific UI tree using adb -s "$
 | English/symbols | Ordinary QWERTY/symbols also local until 確定; all95 ASCII, both symbol pages, one-shot Shift, labels/exit controls | NOT RUN |
 | Capacity | At256 code points next key is visibly rejected; no implicit commit; delete/confirm/cancel permits more accepted typing | NOT RUN |
 | Native caret/selection | Host taps/arrows preserve draft; explicit confirmation uses actual caret/range, retains prefix; host-owned span finished without replacing its text | NOT RUN |
-| Host rejection | Unsupported/rejected finish/commit displays failure and keeps editable/cancellable draft; explicit retry works when host permits; do not count rejection as usable conversion | NOT RUN |
+| Host rejection | Detected finish/commit dispatch failure displays failure and keeps editable/cancellable draft; explicit retry works when host permits; do not count rejection as usable conversion | NOT RUN |
 | Native delete | Local code point deletion/preview cancel; empty-draft DEL on actual range/caret; emoji, combining/ZWJ clusters, native EditText and local WebView | NOT RUN |
 | Flick mapping | All12keys/fivedirections includingや/わ;8/22/40dp thresholds/densities/edge origins; one emission on release | NOT RUN |
+| Settings private/control synchronization | Toggle privacy from IME while Settings is paused; resume and compare actual control state; repeat live foreground changes. UI refresh writes no preferences; failed private-state read shows ON | NOT RUN |
+| Obscured Settings/launcher controls | Native full/partial/combined flags: clean DOWN→obscured UP; clean DOWN→partial MOVE→clean UP; obscured DOWN→clean UP; obscured CANCEL. No privacy/retention/clear/action change; next clean gesture works | NOT RUN |
+| Obscured IME and held repeats | Repeat delete/arrows; inject flag1/2/3 UP/MOVE/CANCEL; cancel before root rejection and suppress clean tail; hide/disable/detach/lifecycle stop repeats. No hasWindowFocus dependency | NOT RUN |
+| Accessibility after filtering | Touch gesture blocked, then legitimate accessibility performClick/flick works; labels do not echo password text; evaluate actual service transport | NOT RUN |
+| Protected complete kana | Text/visible/web/number password, null/unknown: every voiced/semivoiced/small kana in both scripts and base katakana. Complete character appends once, never combines/reconstructs/replaces a prior password character; no draft/echo/history | NOT RUN |
+| Dispatch without application | Native fixture accepts remote void command but filters/drops it: keyboard sends once, no automatic retry/post-confirmation draft; user checks host. Eligible learningON can record dispatched choice; private/NO_PERSON/password cannot | NOT RUN |
 | Touch/repeat cancellation | Drag/cancel/multitouch/release/hide/field change/rotation cancels held delete/arrows and stale callbacks | NOT RUN |
 | Layout/insets | Local row visible/scrollable, candidate rail, Japanese controls, staggered English; height44–76/default58/landscape44; font scaling/One UI/nav insets/accessibility | NOT RUN |
 | Sensitivity try pad | Last kana only, no host sends/history/learning; reset on hide; default/reset22dp and changes midgesture | NOT RUN |
@@ -30,11 +36,11 @@ For UI QA derive gesture/tap bounds from a step-specific UI tree using adb -s "$
 | Phrase proposals | LearningOFF/private:にほんにいきます/きょうはとうきょうにいきます/すしをたべます;分割labels, raw fallback, long/unknown/stale/cancelled work | NOT RUN |
 | Passwords | Text/visible/web/number password; direct syntheticA$1, no local draft/candidates/accessibility echo/learned lookup/records; symbolpages usable | NOT RUN |
 | Manual text/body/WebView | Body1 andWEB_EDIT_TEXT0xA1 with/withoutNO_SUGGESTIONS0x80000 andNO_PERSON0x01000000:local draft, first変換opens fixed list, edits close it, no history/records;normal notepad control keeps automatic candidates | NOT RUN |
-| URI/email/FORCE_ASCII | URI0x11,email0x21/web0xD1;FORCE_ASCII0x80000000 combinations:ABC default, ASCII usable, switchかな→reading→変換;Unicode rejection leaves draft, no host-validation bypass | NOT RUN |
+| URI/email/FORCE_ASCII | URI0x11,email0x21/web0xD1;FORCE_ASCII0x80000000 combinations:ABC default, ASCII usable, switchかな→reading→変換;Detected Unicode dispatch failure leaves draft; silent host filtering is unacknowledged, no host-validation bypass | NOT RUN |
 | Delayed candidates | Dictionary load/learning notification/old segmented completion before request and after field changes cannot reopen candidates;include repeated reading and normal→manual switches | NOT RUN |
 | Private/restricted | NO_PERSONAL flags/private keep static conversion without learned reads/writes; NO_SUGG recognized text:explicit fixed conversion/no history or segmented proposals;numeric/phone/date/unknown direct;ASCII defaults preserved; sensitive types prevent learning | NOT RUN |
 | Same-editor private settings | Return from settings without fresh onStartInput; current preference invalidates old learned preview/tap/queue; rapidON/OFF never revives old actions | NOT RUN |
-| Learning eligibility | DefaultOFF; exact lexical explicit candidate/preview-confirm only; raw/cancelled/failed/phrase choices do not save | NOT RUN |
+| Learning eligibility | DefaultOFF; exact lexical explicit candidate/preview-confirm only; raw/cancelled/detected-dispatch-failure/phrase choices do not save; silently dropped but dispatched eligible choices can save | NOT RUN |
 | Retention/clear | Synthetic clock:1/7/30/90days, expiry/shorten/extend/rollback; clear/Off during writes; old results cannot return; clear preserves dictionary/controls | NOT RUN |
 | Storage/failures |128entries/32KiB+32KiBtemp,32pending; corrupt/oversized/interrupted data; failure message and stopped learning; no input-thread file I/O | NOT RUN |
 | Host actions | Search/Next/Done/Send/Previous/customlabel/no-enter/multiline; draft Enter confirms first, empty draft executes action | NOT RUN |

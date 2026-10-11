@@ -1,58 +1,58 @@
-# Verification — 0.1.7 development trial
+# Verification — 0.1.8 hardening candidate
 
-Application **3cd0f7dd1f04f5e2e985f909d0f520695b25f074**;version0.1.7/code8. Signed APK **512,678 bytes**, SHA256 **df40f0691e3d975f80b603e457fdb7cceecd43b12983f0737ca7d31ac1824e03**, approved existing certificate, not debuggable. **Independent-review hold: no0.1.7 Library replacement.** No SDK install/agreement/new key/device action/public APK release.
+Application commit **679cc413005fe15ff53b39a0ee906646d96462d8**; version0.1.8/code9. The final signed, non-debuggable candidate is **516,774 bytes**, SHA-256 **c1fc2b00570e27e0ddb6c501beae2559946c31f4d4277632376151e29d19e8d5**. The approved existing certificate is reused. Independent review is **PENDING**; replacement APK delivery is **NOT PERFORMED**. No SDK installation/agreement, new key, phone action or public APK release occurred.
 
-## Exact results
+## Exact executed results
 
 | Check | Result | Scope |
 |---|---|---|
-| Core | PASS —42 groups | Flick/input/field/action/capacity/lifecycle;NO_SUGGESTIONS with/without NO_PERSON, body/web/URI/email/FORCE_ASCII combinations, restricted types |
-| Features | PASS —51 groups | Existing learning/race/failure/storage/layout/phrase/projection plus explicit-only dictionary/history-supplier/notification/delayed-work regressions |
-| ConnectionEditor API adapter | PASS —14 groups | Actual API signatures, synthetic InputConnection, injected native keys |
-| Local preedit API fixture | PASS —29 groups | Independent host text/caret and local draft/request/preview oracle; focus/relayout/rejected commits/continued typing |
-| Ordinary bounded sequences | PASS —59,048 cases | Depth0–4, nine operations, eight span/range/flush options; exact host/draft/preview/counts and further accepted key |
-| Explicit-only bounded sequences | PASS —177,776 cases | Depth0–4, ten operations including request; eight options, NO_PERSON both states; exact request state/no learned records |
-| Continuous ordinary conversion | PASS —1,000 cycles |4,000 accepted keys/2,000 exact confirmations; delayed/coalesced updates |
-| Continuous explicit-only conversion | PASS —2,000 cycles |8,000 accepted keys/4,000 exact confirmations; NO_PERSON both states/no learned records |
-| Actual in-app help | PASS —5 source/DEX guards | Local confirmation/privacy/learning/manual policy/retired claims; included in source/APK totals |
-| Help negative controls | PASS —45 mutations | Missing behavior/section, duplicates, retired claims |
-| Compatibility negative controls | PASS —6 mutations | Independent no-learning gate, restricted types, first-press ordering, lazy history, phrase callback and static tap generation |
-| Source policy | PASS —29 checks | Permissions/log/network/surrounding reads, exports/intents/dependencies, local preedit, no-backup learning, explicit gates |
-| Cached AOSP compile/resources/DEX | PASS | Pinned API35/AAPT2/D8, clean generated output; no fetch or SDK installation |
-| Actual signed APK | PASS —26 checks | Binary manifest/version/permissions/exports/debug/backup, help/guidance/DEX/assets/namespace/alignment |
-| Signature | PASS | apksig8.7.3;v2/v3 API26–35;one expected certificate;zero errors/warnings |
-| Payload | PASS —10 entries | Signed/unsigned bytes identical;both ZIP CRC checks pass |
-| Actual DEX tamper | PASS | Same four-argument verifier accepts control and rejects altered DEX with1 signature error;signature block retained;temporary copy removed |
-| Prior0.1.6 NO_SUGGESTIONS requirement | EXPECTED FAIL | Exact a91012f source compiled;acceptedにほん directly committed/empty local draft;synthetic policy reproduction |
-| First0.1.7 adapter run | FAIL — corrected test expectation | Expected4 successful commits although one was rejected;correct3;no app change required;complete rerun passes |
-| Historical defects | EXPECTED FAIL — retained | Missing first kana;0.1.3 cursor/duplication;0.1.4 coalesced cancel;0.1.5 acceptedご loss/lockout |
-| Historical0.1.6 build/help defects | FAIL/EXPECTED FAIL — previously corrected | Deleted compiled class and old help/projection;retained traces;current clean build and projection regressions pass |
-| Prior artifacts | PASS | Seven prior APK hashes and held pre-help0.1.6 archive unchanged |
-| Protected project | PASS |175 tracked gpd-control-android SHA256 values unchanged;git clean |
-| Gradle/lint/conventional merged manifest | NOT RUN | SDK absent;alternative packaged binary manifest inspected |
-| Install/registration/IME/Binder/Looper/native events | NOT RUN | No SDK/adb/emulator/KVM;no physical-device operation |
-| Android views/touch/accessibility/insets/rotation/lifecycle | NOT RUN | Compiled source/pure models;native framework/One UI unobserved |
-| Native DEL/cursor/graphemes/WebView/actions | NOT RUN | API compile/injected key model only |
-| Android storage/backup/transfer/logcat/network capture | NOT RUN | Source/artifact controls and Linux file tests only |
-| S24 latency/haptics/airplane mode | NOT RUN | No native measurements |
-| Affected browser/reported resolution | NOT RUN | URL/search and page fail while browser notepad works;browser/flags/returns unknown |
-|0.1.7 Library delivery/download-back | NOT RUN — held | Review required before replacements;prior0.1.6 items untouched |
+| Core | PASS —42 groups | Flick/input/field/action/capacity/lifecycle/manual-conversion policy |
+| Features | PASS —51 groups | Learning/races/failure/storage/layout/phrase/projection and explicit-only restrictions |
+| Hardening core | PASS —9 groups | Obscured full/partial/tail transitions, complete immutable kana tables, direct policy/no echo, observable failure and one-shot dispatch |
+| ConnectionEditor API adapter | PASS —14 groups | Actual API signatures, synthetic InputConnection and native-key injection model |
+| Local preedit API fixture | PASS —29 groups | Independent synthetic host text/caret/draft/request/preview oracle |
+| Remote dispatch contract | PASS —4 groups | Actual cached API35 RemoteInputConnection/invoker Java with synthetic endpoint; true dispatch without application, RemoteException failure, no auto-retry/retained confirmed text, learning policy |
+| Production UI integration model | PASS —18 groups | Actual Settings/Setup/KeyView/SecureTouchFrame/IME/ConnectionEditor/LearningStore with declared host shims; live privacy, mixed obscuration cancellation, repeat lifecycle, accessibility, direct kana, rotation and explicit-only first request |
+| Ordinary bounded sequences | PASS —59,048 cases | Depth0–4; exact synthetic host/draft/preview/counts and continued input |
+| Explicit-only bounded sequences | PASS —177,776 cases | Depth0–4; explicit request and NO_PERSONALIZED_LEARNING both states |
+| Repeated ordinary sessions | PASS —1,000 cycles |4,000 accepted keys /2,000 exact confirmations |
+| Repeated explicit-only sessions | PASS —2,000 cycles |8,000 accepted keys /4,000 exact confirmations; no learned records |
+| Help negative controls | PASS —56 mutations rejected | Missing/duplicate sections, retired claims and acknowledgement/direct-kana limits |
+| Compatibility negative controls | PASS —6 mutations rejected | No-learning gate, restricted fields, first-request order, lazy history, phrase/tap generation |
+| Source policy | PASS —30 checks | Permissions, logs/network/read paths, exports/intents/dependencies, preedit, backup, manual gates and help |
+| Cached AOSP build | PASS | Pinned API35/AAPT2/D8 clean build; existing JDK/cache, no fetch or SDK installation |
+| Signed APK policy | PASS —27 checks | Binary manifest, version/debug/exports/permissions/backup, DEX/help/assets/namespace/alignment |
+| Signature | PASS —v2/v3;zero errors/warnings | apksig8.7.3, API26–35, one expected certificate |
+| Payload equality/CRC | PASS —10 entries byte-identical;both ZIP CRC valid | Signed/unsigned entry bytes and ZIP CRC |
+| DEX tamper rejection | PASS —altered compressed DEX rejected with1 signature error;temporary copy removed | Valid control and byte-altered DEX with retained signature block |
+| Source/review packet | Prepared after the final documentation commit; exact hashes in the external review receipt | Allowlisted tracked source, per-entry manifest and evidence checks |
+| Protected project/prior artifacts | PASS —175 gpd hashes/git clean,8 prior APKs and both audit hashes unchanged | Original checkout,175 gpd tracked hashes, retained APKs and audit files |
+| First UI-model fixture compile | FAIL — corrected | Fixture-only missing LENGTH_LONG/self-reference; retained trace; latest full model pass |
+| Gradle/lint/conventional merged manifest | NOT RUN | Full SDK absent; actual packaged binary manifest inspected instead |
+| Native Android/registration/Binder/Looper/events | NOT RUN | No adb/emulator/KVM or physical-device operation |
+| Native touch/WindowManager/overlay/accessibility/insets | NOT RUN | Host models do not implement real layout/hit-testing, overlays or accessibility transport |
+| Native rotation/lifecycle/grapheme deletion/actions | NOT RUN | Compile/model evidence only; OEM order/host behavior unobserved |
+| Android UID/storage/backup/transfer/logcat/capture | NOT RUN | Source/packaged controls and synthetic Linux file tests only |
+| S24/browser/latency/haptics/airplane mode | NOT RUN | Actual reported browser flags and native resolution remain unknown |
+|0.1.8 independent review | PENDING | Exact source commit/packet offered for review; no clearance claimed |
+|0.1.8 APK replacement/public release/install | NOT PERFORMED | Previous delivered APK remains unchanged |
 
-The236,824 sequences and3,000 cycles are cases inside groups, not extra group counts. Every accepted input must appear once according to explicit editing and confirmation; ignored keys/lockout fail. The oracle is bounded/synthetic, not all Android schedules, hostile hosts or a security audit. Service callback policy is compiled, statically guarded and tested through production CandidateList/PhraseRequests; native service/View dispatch is unexecuted.
+The167 groups are102 core/feature/hardening +47 Android API +18 UI-model groups. Sequence/cycle cases occur inside groups; they are not extra group counts. The oracle fails ignored accepted keys, duplication and permanent lockout. It is bounded and synthetic, not a proof over every Android schedule or hostile host. Production UI models explicitly omit WindowManager, Binder, real Looper scheduling, layout/hit-testing and One UI.
 
-Tests use the real licensed dictionary and pre-existing synthetic records. History suppliers throw if invoked in manual/restricted/private policies; record APIs reject those choices without file writes. No unsolicited candidates before explicit request, after reading edits or field changes; loading/learning notifications and old segmented results cannot open them. URI/email/FORCE_ASCII keep English defaults/ASCII entry, and rejected Unicode keeps the editable draft. This addresses a plausible policy cause without proving the user's actual flags.
+The remote-wrapper tests execute real API35 Java against a synthetic endpoint. They establish that the local success boolean acknowledges command dispatch, not host display/application. Native Binder transport remains NOT RUN. This finding is addressed by accurate contracts/help and a no-auto-retry policy; full host acceptance was not made observable.
 
-## Packet evidence
+## Five audit responses
 
-The public verification ZIP includes docs/notices and exact scoped evidence, excluding credentials, Library identities and workspace-wide inventories:
+F1: actual Settings resume and live callbacks synchronize all current controls without writes; private-read failure shows ON. F2/F5: root filtering cancels children with an unflagged CANCEL and stops repeats before swallowing a gesture tail. Full/partial/combined flags on DOWN/MOVE/UP/CANCEL, obscured DOWN to clean UP, clean DOWN to partial MOVE to clean UP, the next clean DOWN, hidden/disabled/detached and lifecycle cancellation are covered. Accessibility performClick/flick remains available; no hasWindowFocus condition was added.
 
-- iteration-0.1.7-host-tests.txt, adapter-tests.txt and adapter-tests-first-run.txt: final checks and corrected test failure.
-- iteration-0.1.7-before-fix.txt: prior source compiled and failed the editable NO_SUGGESTIONS requirement.
-- iteration-0.1.7-aosp-build.txt, signed-apk-policy.txt, signature.json, signature-control.txt, payload.json and tamper.json.
-- Actual0.1.7 apk-manifest.xml/txt, apk-badging.txt, compiled backup rules and dex-strings.txt.
-- iteration-0.1.7-diagnosis.json, protected-project.json, publication-manifest.json and source-export.json: scope/preservation/exact public tree/ZIP bytes and line-ending normalization.
-- Historical scoped before-fix/build/help failure traces where cited, with their original version labels.
+F4: all26 precomposed voiced/semivoiced and12 small kana in both scripts are available to protected direct input. Actual IME models exercise text/visible/web password, null/unknown policies and base katakana; no password echo, reconstructed prior input, combining marks or learned writes. F3: detected remote failure retains ordinary local draft; successful dispatch clears once and may notify eligible learning even if a host silently drops it. No host reads, input logs, automatic resend or post-confirmation text cache was added.
 
-Unsigned SHA256 **5d71ce71c933bfa520c80a1d0ce7a1444758c40cf470487a43df27a9ffef08ff** (507,202bytes). Certificate SHA256 **54d17f7d3afe53d1c06c74984aa976150b7336f1843ac0869fa28876856b84fe**. Source ZIP covers the clean tracked tree;APK binds to the application commit. Documentation/publication commit is recorded in the packet receipt. Local SHA256/CRC prove prepared bytes, not cloud download-back.
+## Evidence packet
 
-Corrected0.1.6 was previously delivered after review as a limited trial.0.1.7 remains local and held;no public binary release/device install. [Composition](COMPOSITION.md), [threat model](THREAT_MODEL.md), [runtime gate](RUNTIME_QA.md), [device matrix](DEVICE_TEST_PLAN.md).
+Final evidence filenames start final-0.1.8- and include executed command receipts, complete host/API/UI logs, build, signed APK policy, signature, payload, tamper and preservation JSON, source export and public file manifests. Actual APK XML/text, badging, backup rules and DEX strings are included. Test source is in the source ZIP. The earlier model fixture compile failure is retained with its original label.
+
+The intermediate unsigned build predates final help changes and is not delivered. Historical0.1.7 and older evidence/artifacts remain unchanged. Delivered0.1.7 is the audited baseline; its five findings are documented in the separate audit report/evidence already saved in the user's Library. Historical security/source test passes did not invalidate those later findings.
+
+Unsigned final: **511,261 bytes**, SHA-256 **5f82bf06d99191a04813c05feea168a87111581c9f648a78f72cfa4290025487**. Certificate SHA-256: **54d17f7d3afe53d1c06c74984aa976150b7336f1843ac0869fa28876856b84fe**. Local receipts establish prepared bytes, not a cloud download-back. The final review/documentation commit and source/report ZIP hashes are recorded in the review receipt outside the source ZIP to avoid circular hashes.
+
+[Threat model](THREAT_MODEL.md), [editing contract](COMPOSITION.md), [daily-use gate](DAILY_USE_READINESS.md), [device matrix](DEVICE_TEST_PLAN.md).

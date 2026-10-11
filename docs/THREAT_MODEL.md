@@ -1,4 +1,4 @@
-# Threat model — 0.1.7
+# Threat model — 0.1.8
 
 ## Goal and scope
 
@@ -20,8 +20,11 @@ Possible observers include network SDKs, malicious IME binders, backup/transfer 
 | Outward calls | Internal settings, system IME picker and explicit user-tapped system keyboard settings; no typed extras | Source audited; routing runtime NOT RUN |
 | Service access | Exported IME protected by BIND_INPUT_METHOD; settings internal; only launcher otherwise exported | Source and packaged manifest |
 | Preedit ownership | Local bounded RAM; no setComposingText/Region, inferred selection or surrounding reads; explicit commit first finishes any host-owned style | Source/API fixture/DEX; native host compatibility untested |
-| Password fields | All supported password variations: direct commits, no local draft/preview/candidate display or learning | Policy/core/API fixture; native editors untested |
-| Local learning | Default off; exact lexical explicit choices only;128 entries/32KiB; one fixed data/temp pair under no-backup storage | Host core/race/failure and real Linux file tests; Android app UID/storage untested |
+| Touch/control integrity | Settings and IME roots cancel children before rejecting full/partial obscured gestures; blocked tails require fresh DOWN or lifecycle reset; repeats stop on hide/disable/detach | Production UI/core model PASS; native overlays and touch reachability NOT RUN; accessibility actions retained |
+| Live privacy display | Settings synchronizes private state and controls on resume/callback without writes; private-read failure shows ON | Actual production Settings host model; native UI NOT RUN |
+| Dispatch contract | Sends once; local success is command dispatch, not host acknowledgement; no post-confirmation retry copy or automatic resend | Actual API35 Java/synthetic endpoint; native Binder NOT RUN; host may filter/drop after dispatch |
+| Password fields | All supported password variations: direct commits, complete precomposed voiced/small kana selector, no previous-character read/reconstruction, draft/preview/candidate echo or learning | Policy/core/API fixture; native editors untested |
+| Local learning | Default off; exact lexical explicit choices dispatched without detected error;host display is unacknowledged;128 entries/32KiB; one fixed data/temp pair under no-backup storage | Host core/race/failure and real Linux file tests; Android app UID/storage untested |
 | Explicit conversion | CandidateList gates before history/dictionary queries;NO_SUGGESTIONS no-learning gate is independent;delayed work cannot open a list | Production core/API/negative-source checks;actual browser flags unknown |
 | Field/private policy | Password/restricted/NO_PERSON flags/sensitive types/manual private mode block remembered lookup and learning; independent live gates on worker/snapshots | Host tests; sensitivity of ordinary editor text cannot be inferred |
 | Backup/transfer | allowBackup=false; all nine legacy/cloud/transfer domains excluded; learning uses getNoBackupFilesDir | Actual compiled XML/manifest; OEM transfer NOT RUN |
@@ -35,10 +38,12 @@ Possible observers include network SDKs, malicious IME binders, backup/transfer 
 
 ## Limits
 
+A successful dispatch is not evidence that the host applied text: filtering/drop can clear an ordinary local draft without display, and eligible opt-in learning may record that dispatched choice. No automatic retry, surrounding read or post-confirmation text buffer is introduced. The full/partial obscuration guard can block legitimate floating windows; it displays a generic close-floating-windows hint without input text. Privileged accessibility is not treated as a hostile touch gesture.
+
 The host receives explicitly confirmed ordinary text and direct restricted/password characters and may record/transmit them. Ordinary unconfirmed text stays in the keyboard rather than being supplied as in-host composition. Accessibility and screen capture can observe the normal local draft/candidates; password echo is suppressed. Keyboard-private UI does not isolate text from privileged observers or make sensitive ordinary fields identifiable.
 
 A compromised OS can disregard permissions/backup flags, inspect memory or transfer data. Java/Binder strings and old references cannot be reliably wiped. Clearing files/references is not physical secure erasure. Plaintext learned pairs stay inside the app UID boundary; root/OS compromise can access them. Stopped-app expiry is enforced at the next lookup/use, not exact-time disk deletion. Failed policy persistence cannot establish durable controls and is reported. Clear does not remove static words or text already delivered to the host.
 
-All seven earlier APKs are retained unchanged. Known composition regressions make 0.1.3–0.1.5 unsuitable for daily typing; signing success did not establish correct editing. The corrected0.1.6 was previously delivered as a limited trial;0.1.7 is held for independent review and native QA. No physical device or new SDK agreement/key was touched and no public APK release occurred.
+All earlier APKs, including delivered0.1.7, are retained unchanged. Known composition regressions make0.1.3–0.1.5 unsuitable for daily typing. The0.1.7 audit identified five bounded privacy/control/usability/contract issues;0.1.8 addresses them in source/models and remains held for independent review and native QA. Signature integrity does not establish editing correctness or daily usability. No physical device, new SDK agreement/key or public APK release occurred.
 
 Any future Mozc/native engine or learning expansion requires complete dependency/license/persistence/outward-path review and fresh packaged audits. Clipboard history must remain opt-in if ever introduced. No cloud recognizer or client may arrive implicitly. [Local learning](LOCAL_LEARNING.md), [composition tradeoffs](COMPOSITION.md) and [verification](VERIFICATION.md) describe current scope.

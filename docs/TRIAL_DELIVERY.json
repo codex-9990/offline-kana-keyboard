@@ -1,6 +1,51 @@
 {
-  "record_scope": "Preparation-time delivery index for 0.1.7: last_delivered is the corrected 0.1.6 packet confirmed before this candidate. This is a historical preparation snapshot, not a live delivery-status feed; eventual 0.1.7 outcome is recorded separately.",
+  "record_scope": "Snapshot at0.1.8 review preparation. Candidate0.1.8 is held; last delivered0.1.7 is preserved. No new APK delivery is implied by source publication or audit Library saving.",
   "current_candidate": {
+    "artifact": {
+      "file_name": "offline-kana-keyboard-0.1.8-trial.apk",
+      "size_bytes": 516774,
+      "sha256": "c1fc2b00570e27e0ddb6c501beae2559946c31f4d4277632376151e29d19e8d5",
+      "development_trial": true,
+      "debuggable": false,
+      "version_name": "0.1.8",
+      "version_code": 9,
+      "application_source_commit": "679cc413005fe15ff53b39a0ee906646d96462d8"
+    },
+    "signer": {
+      "certificate_sha256": "54d17f7d3afe53d1c06c74984aa976150b7336f1843ac0869fa28876856b84fe",
+      "purpose": "Existing approved development trial identity",
+      "count": 1
+    },
+    "verification": {
+      "core_host_groups": "PASS:102 (42core +51feature +9hardening)",
+      "android_api_host_groups": "PASS:47 (14adapter +29local-preedit +4remote-dispatch)",
+      "production_ui_model_groups": "PASS:18; explicitly not native Android",
+      "bounded_sequence_cases": "PASS:236824",
+      "continuous_conversion": "PASS:3000cycles;12000accepted keys;6000confirmations",
+      "negative_controls": "PASS:56help +6compatibility mutations",
+      "source_checks": "PASS:30",
+      "packaged_privacy_and_content_checks": "PASS:27",
+      "signature": "PASS:v2/v3 APIs26–35;one expected signer;zero errors/warnings",
+      "application_payload_comparison": "PASS —10 entries byte-identical;both ZIP CRC valid",
+      "tamper_detection": "PASS —altered compressed DEX rejected with1 signature error;temporary copy removed"
+    },
+    "compatibility_scope": "Complete direct voiced/small hiragana and katakana; no secret read/reconstruction. Explicit manual fixed conversion retained. Full/partial obscured gestures cancelled; Settings live privacy refreshed. Host application is unacknowledged; no automatic resend or post-confirmation text buffer. Eligible learning may record a dispatched choice dropped by the host.",
+    "delivery": {
+      "status": "HELD for independent review; NOT DELIVERED",
+      "channel": "User Library only after review clearance",
+      "library_apk_write_for_0_1_8": "NOT PERFORMED",
+      "public_apk_release": "ABSENT",
+      "source_and_report_packet_hashes": "External review receipt; not embedded to avoid circular source hashes"
+    },
+    "independent_source_review": {
+      "status": "PENDING",
+      "daily_use_clearance": "NOT ESTABLISHED"
+    },
+    "android_runtime_qa": "NOT RUN",
+    "affected_browser_and_s24": "NOT RUN",
+    "device_installation_and_ime_activation": "NOT PERFORMED"
+  },
+  "last_delivered": {
     "artifact": {
       "file_name": "offline-kana-keyboard-0.1.7-trial.apk",
       "size_bytes": 512678,
@@ -30,25 +75,25 @@
     },
     "compatibility_scope": "Recognized NO_SUGGESTIONS text supports explicit fixed conversion with no learned query/record or segmented predictions. URI/email/FORCE_ASCII preserve English default/ASCII keys. Password/nontext/unknown stay direct. Actual affected browser flags and resolution are unverified.",
     "delivery": {
-      "channel": "User Library after independent review clearance",
-      "status": "NOT DELIVERED at preparation: four replacements authorized after correcting this record; actual outcome tracked separately",
-      "library_write_for_0.1.7": "NOT PERFORMED at preparation",
+      "status": "DELIVERED previously as a limited private trial; existing Library items remain unchanged",
+      "channel": "User Library",
       "public_apk_release": "ABSENT",
-      "cloud_stored_bytes_verification": "NOT RUN: no 0.1.7 Library write",
-      "source_and_report_packet_hashes": "Recorded separately in the current review receipt; regenerated when documentation changes"
+      "cloud_stored_raw_hash_verification": "NOT VERIFIED in this hardening work"
     },
     "android_runtime_qa": "NOT RUN",
     "affected_browser_and_s24": "NOT RUN",
     "device_installation_and_ime_activation": "NOT PERFORMED",
     "independent_source_review": {
-      "status": "CLEARED for limited trial conditional on this delivery-record correction",
-      "application_commit": "3cd0f7dd1f04f5e2e985f909d0f520695b25f074",
-      "scope": "Application source review only; reviewer did not rerun tests or inspect the APK binary",
-      "documentation_condition": "This index now separates candidate0.1.7 from last-delivered0.1.6",
-      "native_validation": "NOT RUN"
+      "status": "Historical limited-trial source review; subsequent exact0.1.7 audit identified five bounded findings",
+      "daily_use_clearance": "NOT ESTABLISHED"
+    },
+    "audit": {
+      "status": "Exact0.1.7 source/payload audit report and evidence saved as two new personal Library files",
+      "remaining_native_scope": "NOT RUN",
+      "artifact_replacements": "NONE"
     }
   },
-  "last_delivered": {
+  "earlier_historical_index": {
     "artifact": {
       "file_name": "offline-kana-keyboard-0.1.6-trial.apk",
       "size_bytes": 512678,
@@ -219,5 +264,5 @@
       "review_findings": "Stale local-preedit help; learned preview displayed before expiry/clear invalidation"
     }
   },
-  "preparation_utc": "2026-10-11T11:53:20.805848+00:00"
+  "prepared_utc": "2026-10-11T14:45:26.887654+00:00"
 }

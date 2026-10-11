@@ -1,22 +1,31 @@
-# Development-signed trial 0.1.7
+# Development-signed candidate — 0.1.8
 
-Version **0.1.7**, Android version code **8**, reuses the existing approved development certificate. The APK is **not debuggable**. Signing credentials stay private and outside source/deliverables. No new key, device action or public APK release was created.
+Version0.1.8/code9 reuses the existing approved development certificate. The final APK is not debuggable. Signing credentials remain outside source and deliverables. No new key, device action or public APK release was created.
 
-- Filename: offline-kana-keyboard-0.1.7-trial.apk
-- Size: **512,678 bytes**
-- APK SHA-256: **df40f0691e3d975f80b603e457fdb7cceecd43b12983f0737ca7d31ac1824e03**
-- Certificate SHA-256: **54d17f7d3afe53d1c06c74984aa976150b7336f1843ac0869fa28876856b84fe**
-- Application source: **3cd0f7dd1f04f5e2e985f909d0f520695b25f074**
-- Signature: PASS, v2/v3, API 26–35, one expected signer, zero errors/warnings.
-- Payload comparison: PASS, all 10 signed/unsigned ZIP entries byte-identical; CRC valid.
-- Signed APK checks: PASS,26, including zero permissions and no composing-span reclamation code.
-- Tamper rejection: PASS, same four-argument verifier accepts valid control and rejects modified DEX with one signature error; temporary copies removed.
-- Delivery: user's Library after independent review;0.1.7 replacement NOT PERFORMED.
-- Installation/runtime QA: NOT RUN.
+| Item | Exact candidate |
+|---|---|
+| Filename | offline-kana-keyboard-0.1.8-trial.apk |
+| Size |516,774 bytes |
+| APK SHA-256 |c1fc2b00570e27e0ddb6c501beae2559946c31f4d4277632376151e29d19e8d5 |
+| Certificate SHA-256 |54d17f7d3afe53d1c06c74984aa976150b7336f1843ac0869fa28876856b84fe |
+| Application source |679cc413005fe15ff53b39a0ee906646d96462d8 |
+| Unsigned size |511,261 bytes |
+| Unsigned SHA-256 |5f82bf06d99191a04813c05feea168a87111581c9f648a78f72cfa4290025487 |
+| Signature |PASS, v2/v3 API26–35, one expected signer, zero errors/warnings |
+| Payload/CRC |PASS —10 entries byte-identical;both ZIP CRC valid |
+| Signed APK policy |PASS,27 checks, zero permissions and no composing-span reclamation |
+| Tamper rejection |PASS —altered compressed DEX rejected with1 signature error;temporary copy removed |
+| Independent review |PENDING |
+|0.1.8 APK delivery/public release |NOT PERFORMED |
+| Installation/native Android/S24 QA |NOT RUN |
 
-The corrected0.1.6 trial was delivered after independent review as a limited trial. It and the earlier held pre-help-review0.1.6 variant remain byte-identical;the latter was never delivered.0.1.7/code8 is held for independent review before Library replacement. No signing material enters source or the review packet.
+The final source and report packet hashes are recorded in the external review receipt. Application Java/resources/assets/build/version inputs match the application commit above. The later documentation/review commit also includes a portable JAVA_HOME selection in the UI test runner; it does not change the APK payload.
 
-## Preserved earlier APKs
+The previously delivered0.1.7 remains unchanged at SHA-256 df40f0691e3d975f80b603e457fdb7cceecd43b12983f0737ca7d31ac1824e03,512,678 bytes. Its exact audit found five bounded issues and its host/artifact test passes did not establish daily usability.0.1.8 is prepared for independent review before replacement delivery.
+
+## Earlier artifacts
+
+The earlier hash table below is retained from the previous signing record. All these files and delivered0.1.7 are rechecked by the current preservation receipt. No old APK is overwritten. The pre-help-review0.1.6 variant was never delivered and also remains preserved.
 
 | Version | SHA-256 | Current scope |
 |---|---|---|
@@ -28,6 +37,6 @@ The corrected0.1.6 trial was delivered after independent review as a limited tri
 |0.1.5|cb20b566e777f9f7ad67fc692ef6431441b2ddb1cd25bd966103519c6742aa45|Local only; release-blocking accepted-key loss/lockout|
 |0.1.6|5bb7e8dcde0a9cb6f275bd6e97f6fe896b1aa6d63fadec1e124ac40f74c0910a|Delivered limited trial;native QA unrun;NO_SUGGESTIONS was direct-only|
 
-Official Google Maven **apksig 8.7.3**, Apache-2.0, is pinned in [signing-toolchain.lock.json](signing-toolchain.lock.json) and not packaged. [AOSP apksig](https://android.googlesource.com/platform/tools/apksig/+/refs/heads/main/README.md), [Android signing documentation](https://developer.android.com/tools/apksigner).
+Official Google Maven apksig8.7.3 is pinned in [signing-toolchain.lock.json](signing-toolchain.lock.json), is Apache-2.0 and is not packaged. [AOSP apksig](https://android.googlesource.com/platform/tools/apksig/+/refs/heads/main/README.md), [Android signing documentation](https://developer.android.com/tools/apksigner).
 
-Regular builds remain unsigned. Future signed updates must preserve the certificate and increase version code. Never alter a signed APK. Signature integrity does not establish native behavior, conversion quality or privacy under a compromised OS; follow [DEVICE_TEST_PLAN.md](DEVICE_TEST_PLAN.md).
+Regular builds remain unsigned. Future signed updates must preserve the certificate and increase version code. Never alter a signed APK. Signature integrity does not establish conversion quality, native usability or privacy on a compromised OS. See [daily-use gate](DAILY_USE_READINESS.md) and [device plan](DEVICE_TEST_PLAN.md).

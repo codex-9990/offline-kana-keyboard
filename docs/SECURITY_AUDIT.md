@@ -1,5 +1,7 @@
 # Security audit and corrected trial — 2026-10-11
 
+**Current0.1.8:** five findings from the separate delivered0.1.7 audit are addressed in source/models or documented as an Android dispatch-contract limitation. Independent review and native QA remain pending. See [current verification](VERIFICATION.md) and [daily-use gate](DAILY_USE_READINESS.md).
+
 **Historical scope: delivered 0.1.0 and corrected 0.1.1.** Version 0.1.2 intentionally adds opt-in local lexical storage and heuristic phrase proposals; historical absence-of-learning/persistence statements below do not describe that new feature. See current [VERIFICATION.md](VERIFICATION.md), [THREAT_MODEL.md](THREAT_MODEL.md) and [LOCAL_LEARNING.md](LOCAL_LEARNING.md).
 
 **0.1.1 addresses the confirmed 0.1.0 findings and passes final host/build/artifact checks. Android runtime and Galaxy S24 validation remain NOT RUN.** This is a bounded source/artifact review with synthetic regressions, not a guarantee of absolute safety or zero bugs.

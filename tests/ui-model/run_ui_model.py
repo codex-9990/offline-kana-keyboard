@@ -9,6 +9,7 @@ from pathlib import Path
 import subprocess
 import hashlib
 import json
+import os
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / '.build-cache/android-ui-model'
@@ -226,7 +227,12 @@ CLASSES.mkdir(exist_ok=True)
 jar = ROOT / '.build-cache/aosp-tools/android-all.jar'
 assert hashlib.sha256(jar.read_bytes()).hexdigest() == json.loads((ROOT/'docs/aosp-toolchain.lock.json').read_text())['android-all']['sha256']
 core = ROOT / '.build-cache/host-tests'
-java = Path('/workspace/gpd-toolchains/jdk-17.0.20.1+1/bin')
+java_home = os.environ.get('JAVA_HOME')
+if not java_home:
+    raise SystemExit('NOT RUN: set JAVA_HOME to a complete JDK; this model does not install tools.')
+java = Path(java_home) / 'bin'
+if not all((java/name).is_file() for name in ('java','javac')):
+    raise SystemExit('NOT RUN: JAVA_HOME must contain java and javac.')
 sources = sorted(SRC.rglob('*.java')) + sorted((ROOT/'app/src/main/java/dev/local/koto').glob('*.java'))
 sources.append(ROOT / 'tests/ui-model/dev/local/koto/HardeningUiModelTests.java')
 subprocess.run([str(java/'javac'),'--release','8','-encoding','UTF-8','-cp',f'{jar}:{core}','-d',str(CLASSES),*map(str,sources)],check=True)
