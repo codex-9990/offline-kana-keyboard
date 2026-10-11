@@ -1,0 +1,14 @@
+{
+  "upstream": "https://github.com/skk-dev/dict",
+  "commit": "0a164e6b990c5eb5b59eb7d8789f08865dc2f644",
+  "path": "json/SKK-JISYO.ML.json",
+  "git_blob": "89dba326fd271d250b550fc46f3fe3f2df667ea4",
+  "sha256": "885ed8e2aa38c0249c79fe428aed9c419133984ddff7fcef69035ea886773887",
+  "license": "GPL-2.0-or-later",
+  "raw_readings": 44401,
+  "raw_okuri_keys": 4349,
+  "bundled_keys": 48750,
+  "bundled_candidates": 67342,
+  "removed_unsupported_candidates": 0,
+  "asset_sha256": "3b1f7a345eb0bcf651fe34844a2929a5d6ce743c95dffd6a682cbb3af90636d7"
+}

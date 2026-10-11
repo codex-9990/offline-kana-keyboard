@@ -1,0 +1,4 @@
+* text=auto eol=lf
+*.jar binary
+*.bat text eol=crlf
+third_party/skk/SKK-JISYO.ML.json -text

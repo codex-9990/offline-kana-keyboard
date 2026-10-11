@@ -1,0 +1,39 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'dev.local.koto'
+    compileSdk 35
+    buildToolsVersion '35.0.1'
+    defaultConfig {
+        applicationId 'dev.local.koto'
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName '0.1.0'
+        testInstrumentationRunner 'dev.local.koto.ImeSmokeInstrumentation'
+    }
+    // Deliberately do not create a signing identity. Supply an existing test
+    // keystore explicitly after approval; otherwise assembleDebug is unsigned.
+    def approvedKey = providers.environmentVariable('KOTO_DEBUG_KEYSTORE').orNull
+    if (approvedKey) {
+        signingConfigs {
+            approvedDebug {
+                storeFile file(approvedKey)
+                storePassword providers.environmentVariable('KOTO_DEBUG_STORE_PASSWORD').get()
+                keyAlias providers.environmentVariable('KOTO_DEBUG_KEY_ALIAS').get()
+                keyPassword providers.environmentVariable('KOTO_DEBUG_KEY_PASSWORD').get()
+            }
+        }
+    }
+    buildTypes {
+        debug { signingConfig approvedKey ? signingConfigs.approvedDebug : null }
+        release { signingConfig null; minifyEnabled false }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    lint { abortOnError true }
+}
+
+// No runtime libraries, native libraries, telemetry or network dependencies.

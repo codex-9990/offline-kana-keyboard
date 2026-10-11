@@ -1,0 +1,15 @@
+.gradle/
+.build-cache/
+**/build/
+local.properties
+dist/
+verification/
+*.jks
+*.keystore
+*.p12
+*.pem
+.idea/
+*.iml
+__pycache__/
+*.pyc
+.DS_Store
