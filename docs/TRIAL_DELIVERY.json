@@ -1,137 +1,223 @@
 {
-  "artifact": {
-    "file_name": "offline-kana-keyboard-0.1.6-trial.apk",
-    "size_bytes": 512678,
-    "sha256": "5bb7e8dcde0a9cb6f275bd6e97f6fe896b1aa6d63fadec1e124ac40f74c0910a",
-    "development_trial": true,
-    "debuggable": false,
-    "version_name": "0.1.6",
-    "version_code": 7,
-    "application_source_commit": "a91012fa2d5b300c87032835d16fa41b6cf9b930"
+  "record_scope": "Preparation-time delivery index for 0.1.7: last_delivered is the corrected 0.1.6 packet confirmed before this candidate. This is a historical preparation snapshot, not a live delivery-status feed; eventual 0.1.7 outcome is recorded separately.",
+  "current_candidate": {
+    "artifact": {
+      "file_name": "offline-kana-keyboard-0.1.7-trial.apk",
+      "size_bytes": 512678,
+      "sha256": "df40f0691e3d975f80b603e457fdb7cceecd43b12983f0737ca7d31ac1824e03",
+      "development_trial": true,
+      "debuggable": false,
+      "version_name": "0.1.7",
+      "version_code": 8,
+      "application_source_commit": "3cd0f7dd1f04f5e2e985f909d0f520695b25f074"
+    },
+    "signer": {
+      "certificate_sha256": "54d17f7d3afe53d1c06c74984aa976150b7336f1843ac0869fa28876856b84fe",
+      "purpose": "Development trial only",
+      "count": 1
+    },
+    "verification": {
+      "core_host_groups": "PASS: 93 (42 core +51 feature)",
+      "android_api_host_groups": "PASS: 43 (14 adapter +29 local-preedit)",
+      "bounded_sequence_cases": "PASS: 236824 (59048 ordinary +177776 explicit-only)",
+      "continuous_conversion": "PASS: 3000 cycles;12000 accepted keys;6000 confirmations",
+      "negative_controls": "PASS:45 help +6 compatibility mutations",
+      "source_checks": "PASS:29",
+      "packaged_privacy_and_content_checks": "PASS:26",
+      "signature": "PASS:v2/v3 APIs26–35;one expected signer;zero errors/warnings",
+      "application_payload_comparison": "PASS:10 signed/unsigned ZIP entries byte-identical;CRC valid",
+      "tamper_detection": "PASS: actual altered DEX rejected with signature error"
+    },
+    "compatibility_scope": "Recognized NO_SUGGESTIONS text supports explicit fixed conversion with no learned query/record or segmented predictions. URI/email/FORCE_ASCII preserve English default/ASCII keys. Password/nontext/unknown stay direct. Actual affected browser flags and resolution are unverified.",
+    "delivery": {
+      "channel": "User Library after independent review clearance",
+      "status": "NOT DELIVERED at preparation: four replacements authorized after correcting this record; actual outcome tracked separately",
+      "library_write_for_0.1.7": "NOT PERFORMED at preparation",
+      "public_apk_release": "ABSENT",
+      "cloud_stored_bytes_verification": "NOT RUN: no 0.1.7 Library write",
+      "source_and_report_packet_hashes": "Recorded separately in the current review receipt; regenerated when documentation changes"
+    },
+    "android_runtime_qa": "NOT RUN",
+    "affected_browser_and_s24": "NOT RUN",
+    "device_installation_and_ime_activation": "NOT PERFORMED",
+    "independent_source_review": {
+      "status": "CLEARED for limited trial conditional on this delivery-record correction",
+      "application_commit": "3cd0f7dd1f04f5e2e985f909d0f520695b25f074",
+      "scope": "Application source review only; reviewer did not rerun tests or inspect the APK binary",
+      "documentation_condition": "This index now separates candidate0.1.7 from last-delivered0.1.6",
+      "native_validation": "NOT RUN"
+    }
   },
-  "signer": {
-    "certificate_sha256": "54d17f7d3afe53d1c06c74984aa976150b7336f1843ac0869fa28876856b84fe",
-    "purpose": "Development trial only",
-    "count": 1
+  "last_delivered": {
+    "artifact": {
+      "file_name": "offline-kana-keyboard-0.1.6-trial.apk",
+      "size_bytes": 512678,
+      "sha256": "5bb7e8dcde0a9cb6f275bd6e97f6fe896b1aa6d63fadec1e124ac40f74c0910a",
+      "development_trial": true,
+      "debuggable": false,
+      "version_name": "0.1.6",
+      "version_code": 7,
+      "application_source_commit": "a91012fa2d5b300c87032835d16fa41b6cf9b930"
+    },
+    "signer": {
+      "certificate_sha256": "54d17f7d3afe53d1c06c74984aa976150b7336f1843ac0869fa28876856b84fe",
+      "purpose": "Development trial only",
+      "count": 1
+    },
+    "verification": {
+      "signature": "PASS",
+      "tool": "Google apksig 8.7.3 public API",
+      "schemes": [
+        "v2",
+        "v3"
+      ],
+      "checked_api_range": [
+        26,
+        35
+      ],
+      "errors": 0,
+      "warnings": 0,
+      "packaged_privacy_and_content_checks": "PASS: 24 checks including four packaged help instruction guards",
+      "requested_permissions": 0,
+      "application_payload_comparison": "PASS: all 10 unsigned/signed ZIP entries byte-identical",
+      "tamper_detection": "PASS: deliberately altered DEX rejected",
+      "backup": "Disabled; cloud backup and device transfer exclusions unchanged",
+      "core_host_groups": "PASS: 81 groups (36 core +45 feature; three new projection regressions included)",
+      "android_api_adapter_groups": "PASS: 37 groups (14 adapter + 23 local-preedit); native runtime NOT RUN",
+      "source_checks": "PASS: 22 checks including four help instruction guards",
+      "reported_composition_bug": "0.1.5 accepted-key loss reproduced as EXPECTED FAIL; local-preedit synthetic tests pass; reporting app/S24 resolution NOT established",
+      "review_regressions": "Historical EXPECTED FAIL traces retained; span-ownership tracker/latch deleted; native Android NOT RUN",
+      "bounded_sequence_cases": "PASS: 59,048 depth0-4 sequences; every accepted key and explicit confirmation exactly accounted; subsequent accepted input required; no lockout accepted",
+      "callback_policy": "Selection callbacks do not own, send, discard or fence local draft; explicit confirmation writes at actual host selection after finishing host-owned composing style",
+      "continuous_conversion": "PASS: 1,000 cycles, 4,000 accepted keys, 2,000 confirmations and complete host-text equality",
+      "ux_tradeoff": "Ordinary kana/English/symbols stay in keyboard until explicit confirmation; hide/fresh field cancels draft; same-session relayout preserves but framework hide/restart can cancel; restricted fields direct",
+      "initial_build": "FAIL: stale deleted generated class; corrected with isolated generated-output cleanup; final clean build PASS",
+      "preedit_projection": "PASS: expired after relayout,clear/Off before/after worker,valid/restricted projection; visible/accessibility snapshot agrees with next confirmation; native views NOT RUN",
+      "help_negative_checks": "PASS: prior source rejects all4topics; actual archived prior APK rejects new help guard;32negative mutations rejected",
+      "held_prior_0_1_6_preservation": "PASS: previous APK/source/report/readiness bytes and hashes unchanged in local archive; no delivery"
+    },
+    "delivery": {
+      "channel": "User Library",
+      "status": "DELIVERED: four corrected 0.1.6 artifact replacements confirmed after independent review",
+      "confirmed_utc": "2026-10-11T11:05:14.976344+00:00",
+      "public_apk_release": "ABSENT",
+      "receipt": "Confirmed native replacement responses and post-write metadata; private Library identities omitted",
+      "library_write_for_0.1.6": "PERFORMED: 4 succeeded",
+      "prepared_artifact_hash_scope": "Hashes identify reviewed local source bytes, not independently verified raw Library storage bytes",
+      "raw_storage_hash_verification": "NOT VERIFIED for all four: supported download-back failed. Readiness complete text agrees after one terminal LF normalization; does not prove raw stored byte equality.",
+      "readiness_text_verification": "Complete content agrees after one terminal LF normalization; this does not prove raw stored-byte equality",
+      "artifacts": [
+        {
+          "role": "apk",
+          "file_name": "offline-kana-keyboard-0.1.6-trial.apk",
+          "size_bytes": 512678,
+          "reviewed_local_source_sha256": "5bb7e8dcde0a9cb6f275bd6e97f6fe896b1aa6d63fadec1e124ac40f74c0910a",
+          "write_status": "SUCCEEDED"
+        },
+        {
+          "role": "readiness",
+          "file_name": "offline-kana-keyboard-0.1.6-audit-readiness.txt",
+          "size_bytes": 7142,
+          "reviewed_local_source_sha256": "8e95e2025243e5e36c603acf95c4f14a1ed4162839bfd50fbd637bdd17ffc9b4",
+          "write_status": "SUCCEEDED"
+        },
+        {
+          "role": "source",
+          "file_name": "offline-kana-keyboard-0.1.6-source.zip",
+          "size_bytes": 1162959,
+          "reviewed_local_source_sha256": "33c56c1afc2ba2b0f892509266a5b84b8daade1a7bf6a1c8af38f9b085494301",
+          "write_status": "SUCCEEDED"
+        },
+        {
+          "role": "report",
+          "file_name": "offline-kana-keyboard-0.1.6-verification-report.zip",
+          "size_bytes": 76231,
+          "reviewed_local_source_sha256": "cfd27ef6e97eff61f533b854051dcd65ed892ca218a043d17629d4c6230442ee",
+          "write_status": "SUCCEEDED"
+        }
+      ]
+    },
+    "android_runtime_qa": "NOT RUN",
+    "device_installation_and_ime_activation": "NOT PERFORMED",
+    "historical_0.1.0": {
+      "file_name": "offline-kana-keyboard-0.1.0-debug-trial.apk",
+      "sha256": "1c966eb5f24993d214c0b3a3ef48b09c181a25fa8067ad3804091a1c25367cd3",
+      "debuggable": true,
+      "preserved_unchanged": true
+    },
+    "historical_0.1.1": {
+      "file_name": "offline-kana-keyboard-0.1.1-trial.apk",
+      "sha256": "8d890c246f16fd6cf74152c803e2cbedeba7482d1e723173f4376f68514cc60a",
+      "debuggable": false,
+      "preserved_unchanged": true
+    },
+    "privacy": {
+      "requested_permissions": 0,
+      "local_learning": "Default OFF; explicit dictionary-exact lexical choices only",
+      "retention_days": [
+        0,
+        1,
+        7,
+        30,
+        90
+      ],
+      "learned_entries_max": 128,
+      "learned_bytes_max": 32768,
+      "temporary_learning_bytes_max": 32768,
+      "storage": "App-private no-backup; plaintext; no secure-erasure claim",
+      "private_and_restricted_fields": "No learning or remembered-candidate lookup",
+      "surrounding_text": "Not captured",
+      "phrase_candidates": "Heuristic and never saved",
+      "android_private_storage_runtime": "NOT RUN",
+      "preedit": "RAM only; maximum256codepoints; no surrounding reads/span reclamation; restricted/password direct"
+    },
+    "historical_0.1.2": {
+      "file_name": "offline-kana-keyboard-0.1.2-trial.apk",
+      "sha256": "2ae7f36610cdee7e80276b4aa9ae02435897892825e370223ad54d8590a7564f",
+      "debuggable": false,
+      "preserved_unchanged": true
+    },
+    "historical_0.1.3": {
+      "file_name": "offline-kana-keyboard-0.1.3-trial.apk",
+      "sha256": "eac599e1a5d88657b907822c69989d912483dbcd69c80e27511ed7b532ffb1e4",
+      "debuggable": false,
+      "preserved_unchanged": true,
+      "known_regressions": "Acknowledged cursor positions stayed eligible; stripped spans with delayed callbacks duplicated readings"
+    },
+    "historical_0.1.4": {
+      "file_name": "offline-kana-keyboard-0.1.4-trial.apk",
+      "sha256": "a59d345db489e7a6833ca9ea958f85f8782d06b33a4ced1f91ef92a2f0f47c65",
+      "debuggable": false,
+      "preserved_unchanged": true,
+      "library_delivery": "NOT PERFORMED",
+      "known_regression": "Coalesced preview/cancel current-position callback left stale earlier positions eligible"
+    },
+    "historical_0.1.5": {
+      "file_name": "offline-kana-keyboard-0.1.5-trial.apk",
+      "size_bytes": 512678,
+      "sha256": "cb20b566e777f9f7ad67fc692ef6431441b2ddb1cd25bd966103519c6742aa45",
+      "development_trial": true,
+      "debuggable": false,
+      "version_name": "0.1.5",
+      "version_code": 6,
+      "application_source_commit": "c186fb47a0f4ff086444d3908994291d4dabf213",
+      "preserved_unchanged": true,
+      "library_delivery": "NOT PERFORMED",
+      "known_regression": "Normal shorter conversion followed by accepted next kana before callbacks loses that key and can lock out further kana; release-blocking"
+    },
+    "prior_0.1.6_pre_help_review": {
+      "file_name": "offline-kana-keyboard-0.1.6-trial.apk",
+      "size_bytes": 512678,
+      "sha256": "2ba3e39ca74d7da11015be808a1014ed4fcde6e67ff77b4cab332bfe3505d9ff",
+      "development_trial": true,
+      "debuggable": false,
+      "version_name": "0.1.6",
+      "version_code": 7,
+      "application_source_commit": "0aa62da1c7428341556a035864fd715be2212d61",
+      "preserved_unchanged": true,
+      "delivery": "NOT PERFORMED; archived locally",
+      "review_findings": "Stale local-preedit help; learned preview displayed before expiry/clear invalidation"
+    }
   },
-  "verification": {
-    "signature": "PASS",
-    "tool": "Google apksig 8.7.3 public API",
-    "schemes": [
-      "v2",
-      "v3"
-    ],
-    "checked_api_range": [
-      26,
-      35
-    ],
-    "errors": 0,
-    "warnings": 0,
-    "packaged_privacy_and_content_checks": "PASS: 24 checks including four packaged help instruction guards",
-    "requested_permissions": 0,
-    "application_payload_comparison": "PASS: all 10 unsigned/signed ZIP entries byte-identical",
-    "tamper_detection": "PASS: deliberately altered DEX rejected",
-    "backup": "Disabled; cloud backup and device transfer exclusions unchanged",
-    "core_host_groups": "PASS: 81 groups (36 core +45 feature; three new projection regressions included)",
-    "android_api_adapter_groups": "PASS: 37 groups (14 adapter + 23 local-preedit); native runtime NOT RUN",
-    "source_checks": "PASS: 22 checks including four help instruction guards",
-    "reported_composition_bug": "0.1.5 accepted-key loss reproduced as EXPECTED FAIL; local-preedit synthetic tests pass; reporting app/S24 resolution NOT established",
-    "review_regressions": "Historical EXPECTED FAIL traces retained; span-ownership tracker/latch deleted; native Android NOT RUN",
-    "bounded_sequence_cases": "PASS: 59,048 depth0-4 sequences; every accepted key and explicit confirmation exactly accounted; subsequent accepted input required; no lockout accepted",
-    "callback_policy": "Selection callbacks do not own, send, discard or fence local draft; explicit confirmation writes at actual host selection after finishing host-owned composing style",
-    "continuous_conversion": "PASS: 1,000 cycles, 4,000 accepted keys, 2,000 confirmations and complete host-text equality",
-    "ux_tradeoff": "Ordinary kana/English/symbols stay in keyboard until explicit confirmation; hide/fresh field cancels draft; same-session relayout preserves but framework hide/restart can cancel; restricted fields direct",
-    "initial_build": "FAIL: stale deleted generated class; corrected with isolated generated-output cleanup; final clean build PASS",
-    "preedit_projection": "PASS: expired after relayout,clear/Off before/after worker,valid/restricted projection; visible/accessibility snapshot agrees with next confirmation; native views NOT RUN",
-    "help_negative_checks": "PASS: prior source rejects all4topics; actual archived prior APK rejects new help guard;32negative mutations rejected",
-    "held_prior_0_1_6_preservation": "PASS: previous APK/source/report/readiness bytes and hashes unchanged in local archive; no delivery"
-  },
-  "delivery": {
-    "channel": "User Library",
-    "status": "PREPARED LOCALLY; replacement held pending independent review",
-    "public_apk_release": "ABSENT",
-    "receipt": "Delivery outcome tracked separately; no private Library identifiers published",
-    "library_write_for_0.1.6": "NOT PERFORMED"
-  },
-  "android_runtime_qa": "NOT RUN",
-  "device_installation_and_ime_activation": "NOT PERFORMED",
-  "historical_0.1.0": {
-    "file_name": "offline-kana-keyboard-0.1.0-debug-trial.apk",
-    "sha256": "1c966eb5f24993d214c0b3a3ef48b09c181a25fa8067ad3804091a1c25367cd3",
-    "debuggable": true,
-    "preserved_unchanged": true
-  },
-  "historical_0.1.1": {
-    "file_name": "offline-kana-keyboard-0.1.1-trial.apk",
-    "sha256": "8d890c246f16fd6cf74152c803e2cbedeba7482d1e723173f4376f68514cc60a",
-    "debuggable": false,
-    "preserved_unchanged": true
-  },
-  "privacy": {
-    "requested_permissions": 0,
-    "local_learning": "Default OFF; explicit dictionary-exact lexical choices only",
-    "retention_days": [
-      0,
-      1,
-      7,
-      30,
-      90
-    ],
-    "learned_entries_max": 128,
-    "learned_bytes_max": 32768,
-    "temporary_learning_bytes_max": 32768,
-    "storage": "App-private no-backup; plaintext; no secure-erasure claim",
-    "private_and_restricted_fields": "No learning or remembered-candidate lookup",
-    "surrounding_text": "Not captured",
-    "phrase_candidates": "Heuristic and never saved",
-    "android_private_storage_runtime": "NOT RUN",
-    "preedit": "RAM only; maximum256codepoints; no surrounding reads/span reclamation; restricted/password direct"
-  },
-  "historical_0.1.2": {
-    "file_name": "offline-kana-keyboard-0.1.2-trial.apk",
-    "sha256": "2ae7f36610cdee7e80276b4aa9ae02435897892825e370223ad54d8590a7564f",
-    "debuggable": false,
-    "preserved_unchanged": true
-  },
-  "historical_0.1.3": {
-    "file_name": "offline-kana-keyboard-0.1.3-trial.apk",
-    "sha256": "eac599e1a5d88657b907822c69989d912483dbcd69c80e27511ed7b532ffb1e4",
-    "debuggable": false,
-    "preserved_unchanged": true,
-    "known_regressions": "Acknowledged cursor positions stayed eligible; stripped spans with delayed callbacks duplicated readings"
-  },
-  "historical_0.1.4": {
-    "file_name": "offline-kana-keyboard-0.1.4-trial.apk",
-    "sha256": "a59d345db489e7a6833ca9ea958f85f8782d06b33a4ced1f91ef92a2f0f47c65",
-    "debuggable": false,
-    "preserved_unchanged": true,
-    "library_delivery": "NOT PERFORMED",
-    "known_regression": "Coalesced preview/cancel current-position callback left stale earlier positions eligible"
-  },
-  "historical_0.1.5": {
-    "file_name": "offline-kana-keyboard-0.1.5-trial.apk",
-    "size_bytes": 512678,
-    "sha256": "cb20b566e777f9f7ad67fc692ef6431441b2ddb1cd25bd966103519c6742aa45",
-    "development_trial": true,
-    "debuggable": false,
-    "version_name": "0.1.5",
-    "version_code": 6,
-    "application_source_commit": "c186fb47a0f4ff086444d3908994291d4dabf213",
-    "preserved_unchanged": true,
-    "library_delivery": "NOT PERFORMED",
-    "known_regression": "Normal shorter conversion followed by accepted next kana before callbacks loses that key and can lock out further kana; release-blocking"
-  },
-  "prior_0.1.6_pre_help_review": {
-    "file_name": "offline-kana-keyboard-0.1.6-trial.apk",
-    "size_bytes": 512678,
-    "sha256": "2ba3e39ca74d7da11015be808a1014ed4fcde6e67ff77b4cab332bfe3505d9ff",
-    "development_trial": true,
-    "debuggable": false,
-    "version_name": "0.1.6",
-    "version_code": 7,
-    "application_source_commit": "0aa62da1c7428341556a035864fd715be2212d61",
-    "preserved_unchanged": true,
-    "delivery": "NOT PERFORMED; archived locally",
-    "review_findings": "Stale local-preedit help; learned preview displayed before expiry/clear invalidation"
-  }
+  "preparation_utc": "2026-10-11T11:53:20.805848+00:00"
 }
