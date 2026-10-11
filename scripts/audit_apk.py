@@ -95,7 +95,7 @@ with zipfile.ZipFile(APK) as archive:
     (evidence / "dex-strings.txt").write_text("\n".join(strings))
     forbidden = ("Ljava/net/", "Landroid/webkit/", "Landroid/speech/", "Landroid/content/ClipboardManager;",
                  "Landroid/util/Log;", "Lcom/google/firebase/", "Lokhttp", "Lretrofit", "Lio/sentry/",
-                 "CoreTests", "ConnectionEditorHostTests", "ImeSmokeInstrumentation", "SyntheticOnly42")
+                 "CoreTests", "FeatureTests", "ConnectionEditorHostTests", "ImeSmokeInstrumentation", "SyntheticOnly42")
     check("DEX has no network, WebView, speech, logging, telemetry or test-data references", not any(
         fragment in value for value in strings for fragment in forbidden))
     # The android-all compilation jar and build tools must never enter the APK.

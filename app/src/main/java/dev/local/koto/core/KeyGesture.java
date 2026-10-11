@@ -4,12 +4,16 @@ package dev.local.koto.core;
 /** Framework-free pointer state. Retains coordinates only, never typed text. */
 public final class KeyGesture {
     private final boolean flick, repeatable;
-    private final float threshold;
+    private float threshold;
     private boolean active;
     private float startX, startY;
     private int direction;
     public KeyGesture(boolean flick, boolean repeatable, float threshold) {
-        this.flick = flick; this.repeatable = repeatable; this.threshold = threshold;
+        this.flick = flick; this.repeatable = repeatable; threshold(threshold);
+    }
+    public void threshold(float value) {
+        if (!Float.isFinite(value) || value<=0) throw new IllegalArgumentException("Flick distance");
+        cancel(); threshold=value;
     }
     public boolean active() { return active; }
     public int direction() { return direction; }

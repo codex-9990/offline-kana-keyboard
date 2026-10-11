@@ -55,7 +55,20 @@ blocked = [r"\b(?:Log|Timber)\s*\.", r"System\.(?:out|err)", r"printStackTrace\s
            r"\b(?:sendBroadcast|startService|bindService|openFileOutput|FileOutputStream|getExternalFilesDir)\s*\("]
 check("no runtime logs, network, speech, clipboard or upload calls", not any(re.search(p, joined, re.I) for p in blocked))
 writes = re.findall(r"\.put(?:String|Int|Long|Boolean|Float|StringSet)\(\s*\"([^\"]+)\"", joined)
-check("only height and haptic preferences can be stored", sorted(writes) == ["haptics", "row_height"])
+allowed_preferences={"row_height","haptics","flick_distance","incognito","learning_days","learning_cleanup_required"}
+check("only six non-text controls and learning-policy preferences can be stored",set(writes)==allowed_preferences
+      and not re.search(r"\.put(?:String|StringSet|Long|Float)\s*\(",joined))
+file_users={name for name,source in sources.items() if re.search(r"\b(?:Files\.|FileChannel\.open)",source)}
+check("learning file I/O is confined to the fixed-name storage adapter",file_users=={"LearningFileStorage.java"}
+      and 'resolve("learning-v1.bin")' in sources["LearningFileStorage.java"]
+      and 'resolve("learning-v1.tmp")' in sources["LearningFileStorage.java"]
+      and "getNoBackupFilesDir().toPath()" in sources["LearningStore.java"])
+check("learning defaults off and file operations use the background coordinator",
+      'getInt("learning_days",0)' in sources["LearningStore.java"]
+      and "Executors.newSingleThreadExecutor()" in sources["LearningStore.java"]
+      and "worker.execute(this::drain)" in sources["LearningCoordinator.java"]
+      and "storage." not in sources["KotoImeService.java"]
+      and "storage." not in sources["SettingsActivity.java"])
 check("no surrounding text or clipboard reads", not re.search(r"getTextBeforeCursor|getTextAfterCursor|getExtractedText|getSelectedText|getPrimaryClip", joined))
 outward = re.findall(r"\bnew Intent\(([^)]*)\)", joined)
 check("intents limited to own settings and user-triggered system keyboard settings",

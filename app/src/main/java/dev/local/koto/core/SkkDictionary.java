@@ -42,6 +42,29 @@ public final class SkkDictionary {
         return new SkkDictionary(entries);
     }
     public int size() { return entries.size(); }
+    public boolean exactChoice(String reading,String word) {
+        List<String> words=entries.get(reading); return words!=null && words.contains(word);
+    }
+    public List<String> exactWords(String reading) {
+        List<String> words=entries.get(reading); return words==null ? Collections.emptyList() : words;
+    }
+    /** Phrase segmentation only accepts bounded common okuri endings, not arbitrary sentence tails. */
+    public List<String> phraseWords(String reading) {
+        LinkedHashSet<String> result=new LinkedHashSet<>();
+        for (String word:exactWords(reading)) { result.add(word); if (result.size()>=3) break; }
+        List<String> endings=java.util.Arrays.asList("る","く","ぐ","す","つ","ぬ","ぶ","む","う","い","た","て",
+                "った","って","んだ","んで","いた","いて","いだ","いで","した","して","ない","らない","かない",
+                "きます","ぎます","します","ちます","にます","びます","みます","ります","います","くない","かった","られる");
+        for (int split=reading.length()-1;split>0 && result.size()<3;split--) {
+            String suffix=reading.substring(split);
+            if (!endings.contains(suffix)) continue;
+            String initial=okuriInitial(suffix.charAt(0));
+            List<String> stems=entries.get(reading.substring(0,split)+initial);
+            if (stems!=null) for (String stem:stems) { result.add(stem+suffix); if (result.size()>=3) break; }
+        }
+        result.remove(reading); result.remove(FlickLayout.katakana(reading));
+        return Collections.unmodifiableList(new ArrayList<>(result));
+    }
     public List<String> candidates(String reading) {
         if (reading.isEmpty()) return Collections.emptyList();
         LinkedHashSet<String> result = new LinkedHashSet<>();

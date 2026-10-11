@@ -24,6 +24,13 @@ import dev.local.koto.core.InputSession;
 import dev.local.koto.core.SkkDictionary;
 import dev.local.koto.core.EditorAction;
 import dev.local.koto.core.SymbolLayout;
+import dev.local.koto.core.KeyboardLayout;
+import dev.local.koto.core.FlickSensitivity;
+import dev.local.koto.core.LearningCoordinator;
+import dev.local.koto.core.LearningData;
+import dev.local.koto.core.ConversionCandidate;
+import dev.local.koto.core.PhraseConverter;
+import dev.local.koto.core.PhraseRequests;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -42,8 +49,16 @@ public final class KotoImeService extends InputMethodService {
     private LinearLayout board, candidateRow, keyArea;
     private TextView status;
     private HorizontalScrollView candidateScroll;
-    private List<String> candidates = Collections.emptyList();
-    private int selected = -1, rowHeight;
+    private List<ConversionCandidate> candidates = Collections.emptyList();
+    private String candidateReading="";
+    private LearningCoordinator learning;
+    private LearningCoordinator.State candidateState;
+    private ConversionCandidate previewSource;
+    private PhraseRequests phraseRequests;
+    private String phraseReading="";
+    private List<String> phraseCandidates=Collections.emptyList();
+    private final Runnable learningChanged=()-> { if (!destroyed && board!=null) { refreshCandidates(); updateEnterKey(); } };
+    private int selected = -1, rowHeight,flickDistance;
     private boolean haptics;
     private KeyView enterKey;
     private EditorAction action = EditorAction.from(0,0,null);
@@ -52,6 +67,8 @@ public final class KotoImeService extends InputMethodService {
 
     @Override public void onCreate() {
         super.onCreate();
+        learning=LearningStore.get(this); learning.addListener(learningChanged);
+        session.choices(this::recordChoice);
         loader.execute(() -> {
             SkkDictionary loaded = null;
             try { loaded = SkkDictionary.load(getAssets().open("skk.tsv")); }
@@ -60,6 +77,12 @@ public final class KotoImeService extends InputMethodService {
             main.post(() -> {
                 if (destroyed) return;
                 dictionary = result; dictionaryFailed = result == null;
+                if (result!=null) phraseRequests=new PhraseRequests(new PhraseConverter(result),loader,
+                        task->main.post(task),(reading,words)->{
+                            if (!destroyed && session.hasCandidates() && reading.equals(session.text()) && reading.equals(phraseReading)) {
+                                phraseCandidates=words; refreshCandidates(); updateEnterKey();
+                            }
+                        });
                 if (board != null) refreshCandidates();
             });
         });
@@ -81,8 +104,10 @@ public final class KotoImeService extends InputMethodService {
         cancelKeyGestures(board);
         editor = new ConnectionEditor(getCurrentInputConnection(), info);
         session.start(editor, FieldPolicy.from(info.inputType, info.imeOptions));
+        session.incognito(getSharedPreferences("controls",MODE_PRIVATE).getBoolean("incognito",false));
+        learning.maintain();
         action = editor.action(); symbolPage = 0;
-        selected = -1; candidates = Collections.emptyList();
+        clearCandidateState();
         if (board != null) render();
     }
     @Override public void onStartInputView(EditorInfo info, boolean restarting) {
@@ -101,6 +126,9 @@ public final class KotoImeService extends InputMethodService {
     }
     private void clearCandidateState() {
         candidates = Collections.emptyList(); selected = -1;
+        candidateReading=""; candidateState=null; previewSource=null;
+        phraseReading=""; phraseCandidates=Collections.emptyList();
+        if (phraseRequests!=null) phraseRequests.cancel();
         if (candidateRow != null) candidateRow.removeAllViews();
     }
     @Override public void onUpdateSelection(int oldStart, int oldEnd, int newStart, int newEnd, int start, int end) {
@@ -130,7 +158,7 @@ public final class KotoImeService extends InputMethodService {
     }
     private KeyView key(LinearLayout row, String label, String[] flick, KeyView.Listener listener,
                      float weight, boolean repeat, boolean accent) {
-        KeyView view = new KeyView(this, label, flick, listener, haptics, repeat, accent);
+        KeyView view = new KeyView(this, label, flick, listener, haptics, repeat, accent,flickDistance);
         row.addView(view, new LinearLayout.LayoutParams(0, -1, weight));
         return view;
     }
@@ -138,6 +166,7 @@ public final class KotoImeService extends InputMethodService {
         if (board == null) return;
         SharedPreferences prefs = getSharedPreferences("controls", MODE_PRIVATE);
         haptics = prefs.getBoolean("haptics", false);
+        flickDistance=FlickSensitivity.clamp(prefs.getInt("flick_distance",FlickSensitivity.DEFAULT_DP));
         rowHeight = Math.max(44, Math.min(76, prefs.getInt("row_height", 58)));
         if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) rowHeight = 44;
         board.removeAllViews();
@@ -149,12 +178,12 @@ public final class KotoImeService extends InputMethodService {
         candidateScroll.addView(candidateRow, new HorizontalScrollView.LayoutParams(-2, -1));
         board.addView(candidateScroll, new LinearLayout.LayoutParams(-1, dp(48)));
         LinearLayout toolbar = row(board, 44);
-        key(toolbar, "かな", null, d -> changeMode(InputSession.Mode.KANA), 1, false, session.mode() == InputSession.Mode.KANA);
-        key(toolbar, "ABC", null, d -> changeMode(InputSession.Mode.ENGLISH), 1, false, session.mode() == InputSession.Mode.ENGLISH);
-        key(toolbar, "123", null, d -> changeMode(InputSession.Mode.SYMBOLS), 1, false, session.mode() == InputSession.Mode.SYMBOLS);
-        key(toolbar, "←", null, d -> { session.cursor(-1); changed(); }, 1, true, false);
-        key(toolbar, "→", null, d -> { session.cursor(1); changed(); }, 1, true, false);
-        key(toolbar, "切替", null, d -> ((InputMethodManager) getSystemService(INPUT_METHOD_SERVICE)).showInputMethodPicker(), 1, false, false);
+        key(toolbar, "←", null, d -> { if (prepareEdit()) session.cursor(-1); changed(); }, 1, true, false);
+        key(toolbar, "→", null, d -> { if (prepareEdit()) session.cursor(1); changed(); }, 1, true, false);
+        key(toolbar,session.incognito() ? "私用 ON" : "私用 OFF",null,d -> {
+            session.incognito(!session.incognito());
+            prefs.edit().putBoolean("incognito",session.incognito()).apply(); render();
+        },1.7f,false,session.incognito());
         key(toolbar, "設定", null, d -> startActivity(new Intent(this, SettingsActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)), 1, false, false);
         keyArea = new LinearLayout(this); keyArea.setOrientation(LinearLayout.VERTICAL);
         board.addView(keyArea, new LinearLayout.LayoutParams(-1, -2));
@@ -164,58 +193,62 @@ public final class KotoImeService extends InputMethodService {
         if (keyArea == null) return;
         keyArea.removeAllViews();
         if (session.mode() == InputSession.Mode.KANA) {
-            for (int r = 0; r < 4; r++) {
-                LinearLayout line = row(keyArea, rowHeight);
-                for (int c = 0; c < 3; c++) {
-                    final int position = r * 3 + c;
-                    if (position == 9) key(line, "゛小", null, d -> { session.modify(); changed(); }, 1, false, false);
-                    else key(line, FlickLayout.kana(position, 0), FlickLayout.key(position),
-                            d -> { session.type(FlickLayout.kana(position, d)); changed(); }, 1, false, false);
-                }
-                switch (r) {
-                    case 0: key(line, "⌫", null, d -> { session.backspace(); changed(); }, .85f, true, false); break;
-                    case 1: key(line, "変換", null, d -> cycleCandidate(), .85f, false, false); break;
-                    case 2: key(line, "空白", null, d -> space(), .85f, false, false); break;
-                    default: enterKey = key(line, enterLabel(), null, d -> enter(), .85f, false, true);
-                }
-            }
+            for (int r=0;r<4;r++) layoutRow(KeyboardLayout.kanaRow(r));
         } else if (session.mode() == InputSession.Mode.ENGLISH) {
-            letters(SymbolLayout.englishRow(0)); letters(SymbolLayout.englishRow(1));
-            LinearLayout third = row(keyArea, rowHeight);
-            key(third, session.shifted() ? "⇧ ON" : "⇧", null, d -> { session.shift(); renderKeys(); }, 1.3f, false, session.shifted());
-            for (char c : SymbolLayout.englishRow(2).toCharArray()) character(third, String.valueOf(c), 1);
-            key(third, "⌫", null, d -> { session.backspace(); changed(); }, 1.3f, true, false);
-            LinearLayout bottom = row(keyArea, rowHeight);
-            character(bottom, "@", 1); character(bottom, ",", 1);
-            key(bottom, "space", null, d -> {
-                boolean shifted = session.shifted(); session.type(" "); changed();
-                if (shifted != session.shifted()) renderKeys();
-            }, 4, false, false);
-            character(bottom, ".", 1);
-            enterKey = key(bottom, enterLabel(), null, d -> enter(), 2, false, true);
+            for (int r=0;r<4;r++) layoutRow(KeyboardLayout.englishRow(r));
         } else {
             for (int row=0;row<3;row++) symbols(SymbolLayout.row(symbolPage,row));
             LinearLayout bottom = row(keyArea, rowHeight);
             key(bottom,symbolPage==0 ? "記号 2" : "記号 1",null,d -> {
                 symbolPage=(symbolPage+1)%SymbolLayout.pages(); renderKeys(); updateEnterKey();
-            },2,false,false);
+            },1.5f,false,false);
+            key(bottom,"かな",null,d->changeMode(InputSession.Mode.KANA),1.2f,false,false);
+            key(bottom,"ABC",null,d->changeMode(InputSession.Mode.ENGLISH),1.2f,false,false);
             for (String s : SymbolLayout.bottom()) character(bottom,s,1);
             key(bottom, "空白", null, d -> { session.type(" "); changed(); }, 3, false, false);
             enterKey = key(bottom, enterLabel(), null, d -> enter(), 2, false, true);
         }
         updateEnterKey();
     }
+    private void layoutRow(KeyboardLayout.Key[] keys) {
+        LinearLayout line=row(keyArea,rowHeight);
+        for (KeyboardLayout.Key spec:keys) {
+            KeyView.Listener press;
+            switch (spec.role) {
+                case SPACER: line.addView(new View(this),new LinearLayout.LayoutParams(0,-1,spec.weight)); continue;
+                case CHAR: character(line,spec.value,spec.weight); continue;
+                case KANA:
+                    if (spec.kana>=0) {
+                        key(line,spec.value,FlickLayout.key(spec.kana),d->{
+                            if (prepareEdit()) session.type(FlickLayout.kana(spec.kana,d)); changed();
+                        },spec.weight,false,false); continue;
+                    }
+                    press=d->changeMode(InputSession.Mode.KANA); break;
+                case ENGLISH: press=d->changeMode(InputSession.Mode.ENGLISH); break;
+                case SYMBOLS: press=d->changeMode(InputSession.Mode.SYMBOLS); break;
+                case PICKER: press=d->((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).showInputMethodPicker(); break;
+                case HIDE: press=d->requestHideSelf(0); break;
+                case MODIFY: press=d->{ if (prepareEdit()) session.modify(); changed(); }; break;
+                case DELETE: press=d->{ session.backspace(); changed(); }; break;
+                case CONVERT: press=d->cycleCandidate(); break;
+                case SPACE: press=d->space(); break;
+                case SHIFT: press=d->{ session.shift(); renderKeys(); }; break;
+                default: press=d->enter();
+            }
+            boolean repeat=spec.role==KeyboardLayout.Role.DELETE;
+            String label=spec.role==KeyboardLayout.Role.ENTER ? enterLabel()
+                    : spec.role==KeyboardLayout.Role.SHIFT && session.shifted() ? "⇧ ON" : spec.value;
+            KeyView view=key(line,label,null,press,spec.weight,repeat,spec.role==KeyboardLayout.Role.ENTER);
+            if (spec.role==KeyboardLayout.Role.ENTER) enterKey=view;
+        }
+    }
     private void character(LinearLayout line, String text, float weight) {
         String label = session.shifted() ? text.toUpperCase(java.util.Locale.ROOT) : text;
         key(line, label, null, d -> {
             boolean shifted = session.shifted();
-            session.type(text); changed();
+            if (prepareEdit()) session.type(text); changed();
             if (shifted) renderKeys();
         }, weight, false, false);
-    }
-    private void letters(String letters) {
-        LinearLayout line = row(keyArea, rowHeight);
-        for (char c : letters.toCharArray()) character(line, String.valueOf(c), 1);
     }
     private void symbols(String[] values) {
         LinearLayout line = row(keyArea, rowHeight);
@@ -228,7 +261,7 @@ public final class KotoImeService extends InputMethodService {
         if (!session.text().isEmpty()) return "確定";
         return action.label();
     }
-    private void changeMode(InputSession.Mode mode) { session.mode(mode); symbolPage=0; render(); }
+    private void changeMode(InputSession.Mode mode) { if (prepareEdit()) session.mode(mode); symbolPage=0; render(); }
     private void updateEnterKey() {
         if (enterKey == null) return;
         enterKey.label(enterLabel());
@@ -241,25 +274,61 @@ public final class KotoImeService extends InputMethodService {
     }
     private void cycleCandidate() {
         if (!session.hasCandidates() || candidates.isEmpty()) return;
-        int next = (candidates.indexOf(session.preview()) + 1) % candidates.size();
-        session.preview(candidates.get(next), session.revision());
+        if (!prepareEdit() || candidates.isEmpty()) return;
+        int next = (indexWord(session.preview()) + 1) % candidates.size();
+        ConversionCandidate choice=candidates.get(next);
+        if (session.preview(choice.word,session.revision())) previewSource=choice;
         changed();
     }
     private void enter() {
-        session.enter(); changed();
+        if (prepareEdit()) session.enter(); changed();
     }
     private void space() {
-        session.space(); changed();
+        boolean shifted=session.shifted();
+        if (prepareEdit()) {
+            if (session.mode()==InputSession.Mode.KANA) session.space(); else session.type(" ");
+        }
+        changed(); if (shifted!=session.shifted()) renderKeys();
+    }
+    private int indexWord(String word) { for (int i=0;i<candidates.size();i++) if (candidates.get(i).word.equals(word)) return i; return -1; }
+    private boolean currentLearned(ConversionCandidate candidate,String reading) {
+        for (LearningData.Entry e:learning.state().suggest(reading,session.policy(),session.incognito(),System.currentTimeMillis()))
+            if (e.word.equals(candidate.word) && e.reading.equals(candidate.learningReading)) return true;
+        return false;
+    }
+    private boolean prepareEdit() {
+        if (session.preview().isEmpty()) previewSource=null;
+        if (previewSource!=null && previewSource.learned && !currentLearned(previewSource,session.text())) {
+            if (!session.cancelPreview()) return false;
+            previewSource=null;
+            refreshCandidates();
+        }
+        return true;
+    }
+    private void recordChoice(String reading,String word,FieldPolicy policy) {
+        if (!candidateReading.equals(reading) || candidateState!=learning.state()) return;
+        int index=indexWord(word); if (index<0) return;
+        ConversionCandidate candidate=candidates.get(index);
+        if (candidate.eligible && dictionary!=null && dictionary.exactChoice(candidate.learningReading,word)
+                && (!candidate.learned || currentLearned(candidate,reading)))
+            learning.record(candidate.learningReading,word,policy,session.incognito(),true,candidateState.generation);
     }
     private void refreshCandidates() {
         if (candidateRow == null || status == null) return;
         candidateRow.removeAllViews();
+        LearningCoordinator.State learnedState=learning.state();
+        if (previewSource!=null && previewSource.learned && !currentLearned(previewSource,session.text())) {
+            if (session.cancelPreview()) previewSource=null;
+        }
+        String learningLabel=learnedState.busy ? "学習データ処理中" : learnedState.failed ? "保存エラー · 学習停止"
+                : session.incognito() || !session.policy().learning ? "私用 · 学習 OFF"
+                : learnedState.days==0 ? "学習 OFF" : "端末内学習 " + learnedState.days + "日";
         status.setText(session.policy().password ? "Koto · パスワード · 候補 OFF"
             : session.policy().noPersonalizedLearning ? "Koto · プライベート入力 · 学習 OFF"
             : !session.policy().candidates ? "Koto · 直接入力 · 候補 OFF"
             : dictionaryFailed ? "Koto · 辞書を読み込めません · かな入力"
             : dictionary == null ? "Koto · 辞書を準備中 · 学習 OFF"
-            : "Koto · SKK 単語変換 · 学習 OFF");
+            : "Koto · SKK 変換 · " + learningLabel);
         String reading = session.text();
         if (!session.hasCandidates()) {
             clearCandidateState();
@@ -272,21 +341,33 @@ public final class KotoImeService extends InputMethodService {
             candidateRow.addView(hint, new LinearLayout.LayoutParams(-2, -1)); return;
         }
         String katakana = FlickLayout.katakana(reading);
-        candidates = dictionary == null
-                ? (reading.equals(katakana) ? Collections.singletonList(reading) : Arrays.asList(reading, katakana))
-                : dictionary.candidates(reading);
-        selected = candidates.indexOf(session.preview());
+        if (phraseRequests!=null && !reading.equals(phraseReading)) {
+            phraseReading=reading; phraseCandidates=Collections.emptyList(); phraseRequests.request(reading);
+        }
+        candidates=ConversionCandidate.combine(reading,dictionary==null ? Collections.emptyList() : dictionary.candidates(reading),
+                learnedState.suggest(reading,session.policy(),session.incognito(),System.currentTimeMillis()),phraseCandidates,
+                dictionary==null ? Collections.emptyList() : dictionary.exactWords(reading));
+        candidateReading=reading; candidateState=learnedState;
+        if (learnedState.count(System.currentTimeMillis())<learnedState.entries.size()) learning.maintain();
+        selected = indexWord(session.preview());
         final long revision = session.revision();
         for (int i = 0; i < candidates.size(); i++) {
-            final String choice = candidates.get(i), snapshot = reading;
-            Button button = new Button(this); button.setAllCaps(false); button.setText(choice);
-            button.setTextSize(18); button.setTypeface(Typeface.DEFAULT, i == selected ? Typeface.BOLD : Typeface.NORMAL);
+            final ConversionCandidate candidate=candidates.get(i);
+            final String choice = candidate.word, snapshot = reading;
+            final LearningCoordinator.State stateAtRender=learnedState;
+            Button button = new Button(this); button.setAllCaps(false);
+            button.setText(choice+(candidate.phrase ? "\n分割" : candidate.learned ? "\n端末内" : ""));
+            button.setContentDescription(choice+(candidate.phrase ? "、辞書による分割候補。学習保存しません" : ""));
+            button.setTextSize(candidate.phrase || candidate.learned ? 15 : 18);
+            button.setTypeface(Typeface.DEFAULT, i == selected ? Typeface.BOLD : Typeface.NORMAL);
             button.setTextColor(i == selected ? BACKGROUND : INK);
             button.setBackgroundColor(i == selected ? ACCENT : BACKGROUND);
             button.setMinWidth(dp(64)); button.setMinimumWidth(dp(64)); button.setPadding(dp(12), 0, dp(12), 0);
             button.setFilterTouchesWhenObscured(true);
             button.setOnClickListener(v -> {
-                if (snapshot.equals(session.text()) && session.select(choice, revision)) changed();
+                if (snapshot.equals(session.text()) && stateAtRender==learning.state()
+                        && (!candidate.learned || currentLearned(candidate,snapshot)) && session.select(choice,revision)) changed();
+                else refreshCandidates();
             });
             candidateRow.addView(button, new LinearLayout.LayoutParams(-2, -1));
         }
@@ -300,7 +381,8 @@ public final class KotoImeService extends InputMethodService {
         }
     }
     @Override public void onDestroy() {
-        destroyed = true; cancelKeyGestures(board); session.finish(); editor = null; clearCandidateState();
+        destroyed = true; learning.removeListener(learningChanged); session.choices(null);
+        cancelKeyGestures(board); session.finish(); editor = null; clearCandidateState();
         loader.shutdownNow(); main.removeCallbacksAndMessages(null);
         dictionary = null; board = null; keyArea = null; candidateRow = null; frame = null;
         super.onDestroy();

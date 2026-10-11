@@ -32,7 +32,7 @@ public final class SetupActivity extends SettingsActivity {
         guide.setText("Galaxy S24: 設定 → 一般管理 → キーボードリストと標準 → Koto を ON。"
             + "その後、標準キーボードで Koto を選んでください。表示名は One UI の版で異なることがあります。\n\n"
             + "Android のキーボード警告は、入力欄の文字を受け取るすべてのキーボードに共通です。"
-            + "Koto はネットワーク権限も入力の保存もありません。\n\n"
+            + "Koto はネットワーク権限がありません。学習は初期 OFF で、オンにした場合の単語記録は端末内だけです。\n\n"
             + "同じ開発用署名の新しい APK は既存の Koto に上書きできます。署名が違う場合は無理に削除せず確認してください。"
             + "この版は試作です。まず個人情報を含まない短い文で試してください。");
         content.addView(guide,4);

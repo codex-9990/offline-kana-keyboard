@@ -11,6 +11,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 import dev.local.koto.core.KeyGesture;
+import dev.local.koto.core.FlickSensitivity;
 
 /** A pointer gesture emits one character on release; cancelled gestures emit none. */
 public final class KeyView extends View {
@@ -32,10 +33,14 @@ public final class KeyView extends View {
     };
     public KeyView(Context context, String label, String[] flick, Listener listener,
                    boolean haptics, boolean repeatable, boolean accent) {
+        this(context,label,flick,listener,haptics,repeatable,accent,FlickSensitivity.DEFAULT_DP);
+    }
+    public KeyView(Context context, String label, String[] flick, Listener listener,
+                   boolean haptics, boolean repeatable, boolean accent,int flickDistanceDp) {
         super(context);
         this.label = label; this.flick = flick; this.listener = listener;
         this.haptics = haptics; this.repeatable = repeatable; this.accent = accent;
-        gesture = new KeyGesture(flick != null, repeatable, dp(22));
+        gesture = new KeyGesture(flick != null, repeatable,FlickSensitivity.pixels(flickDistanceDp,getResources().getDisplayMetrics().density));
         setClickable(true); setFocusable(true); setFilterTouchesWhenObscured(true);
         setContentDescription(flick == null ? label : label + "。左 " + flick[1]
                 + "、上 " + flick[2] + "、右 " + flick[3] + "、下 " + flick[4]);
@@ -43,6 +48,10 @@ public final class KeyView extends View {
     private float dp(float value) { return value * getResources().getDisplayMetrics().density; }
     private float sp(float value) { return value * getResources().getDisplayMetrics().scaledDensity; }
     public void label(String value) { label = value; setContentDescription(value); invalidate(); }
+    public void flickDistance(int distanceDp) {
+        removeCallbacks(repeat); clickDirection=0;
+        gesture.threshold(FlickSensitivity.pixels(distanceDp,getResources().getDisplayMetrics().density)); invalidate();
+    }
     @Override protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         rect.set(dp(2), dp(2), getWidth() - dp(2), getHeight() - dp(2));

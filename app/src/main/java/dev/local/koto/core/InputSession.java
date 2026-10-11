@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 package dev.local.koto.core;
 
-/** Input state only lives in RAM. No logging, history, persistence or learning. */
+/** Composition only lives in RAM. A successful explicit choice can notify local learning. */
 public final class InputSession {
     public enum Mode { KANA, ENGLISH, SYMBOLS }
     public interface Editor {
@@ -12,6 +12,9 @@ public final class InputSession {
         void cursor(int direction);
         void enter();
     }
+    public interface ChoiceListener { void committed(String reading,String word,FieldPolicy policy); }
+    private ChoiceListener choices;
+    private boolean incognito;
     private Editor editor;
     private String composing = "", preview = "";
     private long revision;
@@ -31,6 +34,9 @@ public final class InputSession {
     public FieldPolicy policy() { return policy; }
     public Mode mode() { return mode; }
     public boolean shifted() { return shifted; }
+    public boolean incognito() { return incognito; }
+    public void choices(ChoiceListener listener) { choices=listener; }
+    public void incognito(boolean value) { if (incognito!=value) { incognito=value; cancelPreview(); revision++; } }
     public boolean hasCandidates() { return policy.candidates && mode == Mode.KANA && !composing.isEmpty(); }
     public void shift() { shifted = !shifted; revision++; }
     public void mode(Mode next) {
@@ -63,7 +69,7 @@ public final class InputSession {
         if (!editor.composing(value)) return false;
         preview = value; revision++; return true;
     }
-    private boolean cancelPreview() {
+    public boolean cancelPreview() {
         if (preview.isEmpty()) return true;
         if (!editor.composing(composing)) return false;
         preview = ""; revision++; return true;
@@ -91,22 +97,32 @@ public final class InputSession {
     public boolean select(String value) {
         if (editor == null || !hasCandidates() || value == null || value.isEmpty()) return false;
         if (!editor.commit(value)) return false;
-        composing = ""; preview = ""; revision++; editor.finish(); return true;
+        String reading=composing;
+        composing = ""; preview = ""; revision++; editor.finish();
+        notifyChoice(reading,value); return true;
     }
     public void commitComposition() {
+        commitComposition(false);
+    }
+    private void commitComposition(boolean explicit) {
         if (editor == null || composing.isEmpty()) return;
-        if (editor.commit(preview.isEmpty() ? composing : preview)) {
+        String reading=composing,choice=preview;
+        if (editor.commit(choice.isEmpty() ? composing : choice)) {
             composing = ""; preview = ""; revision++; editor.finish();
+            if (explicit && !choice.isEmpty()) notifyChoice(reading,choice);
         }
+    }
+    private void notifyChoice(String reading,String word) {
+        if (choices!=null && policy.learning && !incognito) choices.committed(reading,word,policy);
     }
     public void space() {
         if (editor == null) return;
-        commitComposition();
+        commitComposition(true);
         if (composing.isEmpty()) editor.commit(" ");
     }
     public void enter() {
         if (editor == null) return;
-        if (!composing.isEmpty()) commitComposition(); else editor.enter();
+        if (!composing.isEmpty()) commitComposition(true); else editor.enter();
     }
     public void cursor(int direction) {
         if (editor == null) return;

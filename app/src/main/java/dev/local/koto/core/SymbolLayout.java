@@ -11,7 +11,7 @@ public final class SymbolLayout {
         {{"`","~","[","]","{","}","<",">","^","⌫"},
          {"|","$","¥","😀","、","。","「","」",",","."}}
     };
-    private static final String[] BOTTOM = {"$",",","."};
+    private static final String[] BOTTOM = {"$"};
     private SymbolLayout() {}
     public static int pages() { return PAGES.length; }
     public static String englishRow(int row) { return ENGLISH[row]; }
