@@ -1,11 +1,11 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 package dev.local.koto.core;
 
-/** Composition only lives in RAM. A successful explicit choice can notify local learning. */
+/** Keyboard-local preedit. Host text changes only on explicit confirmation or restricted direct entry. */
 public final class InputSession {
+    public static final int MAX_PREEDIT_CODE_POINTS=256;
     public enum Mode { KANA, ENGLISH, SYMBOLS }
     public interface Editor {
-        boolean composing(String value);
         boolean commit(String value);
         void finish();
         void delete();
@@ -14,136 +14,95 @@ public final class InputSession {
     }
     public interface ChoiceListener { void committed(String reading,String word,FieldPolicy policy); }
     private ChoiceListener choices;
-    private boolean incognito;
+    private boolean incognito,shifted,limitReached;
     private Editor editor;
-    private String composing = "", preview = "";
+    private String reading="",preview="";
     private long revision;
-    private FieldPolicy policy = FieldPolicy.from(1, 0);
-    private Mode mode = Mode.KANA;
-    private boolean shifted;
-    public void start(Editor editor, FieldPolicy policy) {
-        // Never move a previous editor's composition to a newly focused editor.
-        if (this.editor != null) this.editor.finish();
-        composing = ""; preview = ""; shifted = false; this.editor = editor; this.policy = policy;
-        mode = policy.numeric ? Mode.SYMBOLS : policy.ascii ? Mode.ENGLISH : Mode.KANA;
-        revision++;
+    private FieldPolicy policy=FieldPolicy.from(1,0);
+    private Mode mode=Mode.KANA;
+    public void start(Editor editor,FieldPolicy policy) {
+        if (this.editor!=null) this.editor.finish();
+        discard(); this.editor=editor; this.policy=policy;
+        mode=policy.numeric ? Mode.SYMBOLS : policy.ascii ? Mode.ENGLISH : Mode.KANA;
     }
-    public String text() { return composing; }
+    public String text() { return reading; }
     public String preview() { return preview; }
+    public String displayed() { return preview.isEmpty() ? reading : preview; }
     public long revision() { return revision; }
     public FieldPolicy policy() { return policy; }
     public Mode mode() { return mode; }
     public boolean shifted() { return shifted; }
     public boolean incognito() { return incognito; }
+    public boolean limitReached() { return limitReached; }
     public void choices(ChoiceListener listener) { choices=listener; }
     public boolean incognito(boolean value) {
-        if (incognito==value) return true;
-        incognito=value; boolean restored=cancelPreview(); revision++; return restored;
+        if (incognito!=value) { incognito=value; cancelPreview(); revision++; }
+        return true;
     }
-    /** Re-read current settings even when Android returns to the same active editor. */
     public boolean syncIncognito(java.util.function.BooleanSupplier currentSetting) {
         boolean value;
         try { value=currentSetting.getAsBoolean(); } catch (RuntimeException ignored) { value=true; }
         return incognito(value);
     }
-    public boolean hasCandidates() { return policy.candidates && mode == Mode.KANA && !composing.isEmpty(); }
-    public void shift() { shifted = !shifted; revision++; }
-    public void mode(Mode next) {
-        commitComposition();
-        if (!composing.isEmpty()) return;
-        mode = next; shifted = false; revision++;
-    }
-    public void type(String value) {
-        if (editor == null || value == null || value.isEmpty()) return;
-        // Continuing to type confirms the visibly selected word before a new reading.
-        if (!preview.isEmpty()) {
-            commitComposition();
-            if (!composing.isEmpty()) return;
+    public boolean hasCandidates() { return policy.candidates && mode==Mode.KANA && !reading.isEmpty(); }
+    public void shift() { shifted=!shifted; revision++; }
+    public void mode(Mode next) { cancelPreview(); mode=next; shifted=false; revision++; }
+    /** True means this key was accepted exactly once into preedit or the direct-entry host. */
+    public boolean type(String value) {
+        if (editor==null || value==null || value.isEmpty()) return false;
+        String next=mode==Mode.ENGLISH && shifted ? value.toUpperCase(java.util.Locale.ROOT) : value;
+        if (!policy.candidates) {
+            if (!editor.commit(next)) return false;
+            shifted=false; revision++; return true;
         }
-        if (mode == Mode.KANA && policy.candidates) {
-            if (composing.codePointCount(0, composing.length()) >= 64) {
-                commitComposition();
-                if (!composing.isEmpty()) return;
-            }
-            String next = composing + value;
-            if (editor.composing(next)) { composing = next; revision++; }
-        } else {
-            String next = mode == Mode.ENGLISH && shifted ? value.toUpperCase(java.util.Locale.ROOT) : value;
-            if (editor.commit(next)) { shifted = false; revision++; }
+        if (reading.codePointCount(0,reading.length())+next.codePointCount(0,next.length())>MAX_PREEDIT_CODE_POINTS) {
+            limitReached=true; return false;
         }
+        preview=""; reading+=next; shifted=false; limitReached=false; revision++; return true;
     }
-    public boolean preview(String value, long expectedRevision) {
-        if (expectedRevision != revision || !hasCandidates() || value == null || value.isEmpty()) return false;
-        if (value.equals(preview)) return true;
-        if (!editor.composing(value)) return false;
-        preview = value; revision++; return true;
+    public boolean preview(String value,long expectedRevision) {
+        if (editor==null || expectedRevision!=revision || !hasCandidates() || value==null || value.isEmpty()) return false;
+        if (!value.equals(preview)) { preview=value; revision++; }
+        return true;
     }
     public boolean cancelPreview() {
-        if (preview.isEmpty()) return true;
-        if (!editor.composing(composing)) return false;
-        preview = ""; revision++; return true;
+        if (!preview.isEmpty()) { preview=""; revision++; }
+        return true;
     }
     public void modify() {
-        if (editor == null || composing.isEmpty()) return;
-        if (!cancelPreview()) return;
-        String next = FlickLayout.modifyLast(composing);
-        if (!next.equals(composing) && editor.composing(next)) { composing = next; revision++; }
+        if (editor==null || reading.isEmpty()) return;
+        cancelPreview(); String next=FlickLayout.modifyLast(reading);
+        if (!next.equals(reading)) { reading=next; revision++; }
     }
     public void backspace() {
-        if (editor == null) return;
-        // First backspace cancels conversion; the next deletes a reading code point.
+        if (editor==null) return;
         if (!preview.isEmpty()) { cancelPreview(); return; }
-        if (composing.isEmpty()) { editor.delete(); revision++; return; }
-        String next = composing.substring(0, composing.offsetByCodePoints(composing.length(), -1));
-        if (editor.composing(next)) {
-            composing = next; revision++;
-            if (next.isEmpty()) editor.finish();
-        }
+        if (reading.isEmpty()) editor.delete();
+        else reading=reading.substring(0,reading.offsetByCodePoints(reading.length(),-1));
+        limitReached=false; revision++;
     }
-    public boolean select(String value, long expectedRevision) {
-        return expectedRevision == revision && select(value);
-    }
+    public boolean select(String value,long expectedRevision) { return expectedRevision==revision && select(value); }
     public boolean select(String value) {
-        if (editor == null || !hasCandidates() || value == null || value.isEmpty()) return false;
+        if (editor==null || !hasCandidates() || value==null || value.isEmpty()) return false;
         if (!editor.commit(value)) return false;
-        String reading=composing;
-        composing = ""; preview = ""; revision++; editor.finish();
-        notifyChoice(reading,value); return true;
+        String original=reading; discard(); notifyChoice(original,value); return true;
     }
-    public void commitComposition() {
-        commitComposition(false);
+    /** Called only by an explicit confirmation control. No typing/mode/cursor/lifecycle caller. */
+    public boolean confirm() {
+        if (editor==null || reading.isEmpty()) return false;
+        String original=reading,choice=preview;
+        if (!editor.commit(displayed())) return false;
+        discard(); if (!choice.isEmpty()) notifyChoice(original,choice); return true;
     }
-    private void commitComposition(boolean explicit) {
-        if (editor == null || composing.isEmpty()) return;
-        String reading=composing,choice=preview;
-        if (editor.commit(choice.isEmpty() ? composing : choice)) {
-            composing = ""; preview = ""; revision++; editor.finish();
-            if (explicit && !choice.isEmpty()) notifyChoice(reading,choice);
-        }
+    private void notifyChoice(String original,String word) {
+        if (choices!=null && policy.learning && !incognito) choices.committed(original,word,policy);
     }
-    private void notifyChoice(String reading,String word) {
-        if (choices!=null && policy.learning && !incognito) choices.committed(reading,word,policy);
-    }
-    public void space() {
-        if (editor == null) return;
-        commitComposition(true);
-        if (composing.isEmpty()) editor.commit(" ");
-    }
-    public void enter() {
-        if (editor == null) return;
-        if (!composing.isEmpty()) commitComposition(true); else editor.enter();
-    }
-    public void cursor(int direction) {
-        if (editor == null) return;
-        commitComposition();
-        if (composing.isEmpty()) editor.cursor(direction);
-    }
-    public void selectionMovedOutsideComposition() {
-        if (editor != null && !composing.isEmpty()) editor.finish();
-        composing = ""; preview = ""; shifted = false; revision++;
-    }
-    public void finish() {
-        if (editor != null) editor.finish();
-        composing = ""; preview = ""; shifted = false; editor = null; revision++;
-    }
+    public void space() { type(" "); }
+    public void enter() { if (editor!=null) { if (!reading.isEmpty()) confirm(); else editor.enter(); } }
+    public void cursor(int direction) { if (editor!=null) { editor.cursor(direction); revision++; } }
+    /** Explicit cancel, hide or field end discards only unconfirmed local text. */
+    public void discard() { reading=""; preview=""; shifted=false; limitReached=false; revision++; }
+    /** A relayout within the same active input preserves the draft and invalidates old buttons. */
+    public void relayout() { shifted=false; revision++; }
+    public void finish() { if (editor!=null) editor.finish(); discard(); editor=null; }
 }

@@ -63,6 +63,10 @@ def main():
     run(["python3", "scripts/prepare_dictionary.py", "--check"])
     run(["python3", "scripts/audit_source.py"])
     build = ROOT / "app/build/aosp-debug"
+    # Deleted Java/resources must not survive a later build. Only this
+    # project's generated output is removed; cached tools and dist are kept.
+    if build.exists():
+        shutil.rmtree(build)
     for folder in (build, build / "generated", build / "classes", build / "dex", ROOT / "dist"):
         folder.mkdir(parents=True, exist_ok=True)
     aapt = CACHE / "aapt2"

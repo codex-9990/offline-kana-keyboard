@@ -70,6 +70,10 @@ check("learning defaults off and file operations use the background coordinator"
       and "storage." not in sources["KotoImeService.java"]
       and "storage." not in sources["SettingsActivity.java"])
 check("no surrounding text or clipboard reads", not re.search(r"getTextBeforeCursor|getTextAfterCursor|getExtractedText|getSelectedText|getPrimaryClip", joined))
+check("preedit stays local and no host span is created or reclaimed",
+      not re.search(r"setComposingText|setComposingRegion|setSelection|EditorSelection",joined)
+      and "boolean composing(" not in sources["InputSession.java"]
+      and sources["InputSession.java"].count("editor.commit(")==3)
 outward = re.findall(r"\bnew Intent\(([^)]*)\)", joined)
 check("intents limited to own settings and user-triggered system keyboard settings",
       sorted(outward) == ["Settings.ACTION_INPUT_METHOD_SETTINGS", "this, SettingsActivity.class"]

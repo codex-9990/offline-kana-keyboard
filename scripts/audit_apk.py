@@ -95,9 +95,11 @@ with zipfile.ZipFile(APK) as archive:
     (evidence / "dex-strings.txt").write_text("\n".join(strings))
     forbidden = ("Ljava/net/", "Landroid/webkit/", "Landroid/speech/", "Landroid/content/ClipboardManager;",
                  "Landroid/util/Log;", "Lcom/google/firebase/", "Lokhttp", "Lretrofit", "Lio/sentry/",
-                 "CoreTests", "FeatureTests", "ConnectionEditorHostTests", "CompositionCallbackHostTests", "ImeSmokeInstrumentation", "SyntheticOnly42")
+                 "CoreTests", "FeatureTests", "ConnectionEditorHostTests", "CompositionCallbackHostTests", "LocalPreeditHostTests", "ImeSmokeInstrumentation", "SyntheticOnly42")
     check("DEX has no network, WebView, speech, logging, telemetry or test-data references", not any(
         fragment in value for value in strings for fragment in forbidden))
+    check("DEX has no composing span creation reclamation or inferred-selection machinery",
+          not any(value in {"setComposingText","setComposingRegion","setSelection"} or "EditorSelection" in value for value in strings))
     # The android-all compilation jar and build tools must never enter the APK.
     type_count, type_offset = struct.unpack_from("<II", dex, 64)
     types = [strings[struct.unpack_from("<I", dex, type_offset + 4 * i)[0]] for i in range(type_count)]

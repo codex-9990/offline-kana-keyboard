@@ -47,7 +47,7 @@ public final class KotoImeService extends InputMethodService {
     private boolean destroyed, dictionaryFailed;
     private FrameLayout frame;
     private LinearLayout board, candidateRow, keyArea;
-    private TextView status;
+    private TextView status,preedit;
     private HorizontalScrollView candidateScroll;
     private List<ConversionCandidate> candidates = Collections.emptyList();
     private String candidateReading="";
@@ -60,7 +60,6 @@ public final class KotoImeService extends InputMethodService {
     private final Runnable learningChanged=()-> { if (!destroyed && board!=null) { refreshCandidates(); updateEnterKey(); } };
     private int selected = -1, rowHeight,flickDistance;
     private boolean haptics;
-    private boolean privacyBlocked;
     private SharedPreferences controls;
     private final SharedPreferences.OnSharedPreferenceChangeListener controlsChanged=(prefs,key)-> {
         if (!destroyed && "incognito".equals(key)) {
@@ -114,7 +113,7 @@ public final class KotoImeService extends InputMethodService {
         cancelKeyGestures(board);
         editor = new ConnectionEditor(getCurrentInputConnection(), info);
         session.start(editor, FieldPolicy.from(info.inputType, info.imeOptions));
-        privacyBlocked=false; syncPrivacy();
+        syncPrivacy();
         learning.maintain();
         action = editor.action(); symbolPage = 0;
         clearCandidateState();
@@ -127,18 +126,16 @@ public final class KotoImeService extends InputMethodService {
     }
     private boolean syncPrivacy() {
         boolean before=session.incognito();
-        boolean restored=session.syncIncognito(()->LearningStore.privateMode(controls));
+        session.syncIncognito(()->LearningStore.privateMode(controls));
         if (before!=session.incognito()) {
             cancelKeyGestures(board); clearCandidateState();
-            privacyBlocked=!restored;
         }
-        if (privacyBlocked) privacyBlocked=!session.cancelPreview();
-        return !privacyBlocked;
+        return true;
     }
     @Override public void onFinishInputView(boolean finishingInput) {
-        // Finish the host's composing span without retaining its text while hidden.
+        // Unconfirmed local input is cancelled on hide; no text is sent implicitly.
         cancelKeyGestures(board);
-        session.selectionMovedOutsideComposition(); clearCandidateState();
+        session.discard(); clearCandidateState();
         super.onFinishInputView(finishingInput);
     }
     @Override public void onFinishInput() {
@@ -151,18 +148,18 @@ public final class KotoImeService extends InputMethodService {
         phraseReading=""; phraseCandidates=Collections.emptyList();
         if (phraseRequests!=null) phraseRequests.cancel();
         if (candidateRow != null) candidateRow.removeAllViews();
+        updatePreedit();
     }
     @Override public void onUpdateSelection(int oldStart, int oldEnd, int newStart, int newEnd, int start, int end) {
         super.onUpdateSelection(oldStart, oldEnd, newStart, newEnd, start, end);
-        if (editor != null && editor.updateSelection(session,oldStart,oldEnd,newStart,newEnd,start,end)) {
-            clearCandidateState(); refreshCandidates(); updateEnterKey();
-        }
+        if (editor != null) editor.updateSelection(oldStart,oldEnd,newStart,newEnd,start,end);
     }
     @Override public void onConfigurationChanged(Configuration configuration) {
-        // The current composing span is already in the host; preserve it as committed text.
+        // Preserve the local draft while relayout keeps this input session active.
         cancelKeyGestures(board);
-        session.selectionMovedOutsideComposition(); clearCandidateState();
+        session.relayout(); clearCandidateState();
         super.onConfigurationChanged(configuration);
+        if (board != null) render();
     }
     private void cancelKeyGestures(View view) {
         if (view instanceof KeyView) ((KeyView) view).cancelGesture();
@@ -194,6 +191,12 @@ public final class KotoImeService extends InputMethodService {
         status = new TextView(this); status.setTextColor(ACCENT); status.setTextSize(11);
         status.setGravity(Gravity.CENTER_VERTICAL); status.setPadding(dp(8), 0, 0, 0);
         board.addView(status, new LinearLayout.LayoutParams(-1, dp(22)));
+        preedit=new TextView(this); preedit.setTextColor(INK); preedit.setTextSize(18);
+        preedit.setMaxLines(2); preedit.setVerticalScrollBarEnabled(true);
+        preedit.setMovementMethod(android.text.method.ScrollingMovementMethod.getInstance());
+        preedit.setGravity(Gravity.CENTER_VERTICAL); preedit.setPadding(dp(8),0,dp(8),0);
+        preedit.setBackgroundColor(0xff243542);
+        board.addView(preedit,new LinearLayout.LayoutParams(-1,dp(rowHeight==44 ? 36 : 48)));
         candidateScroll = new HorizontalScrollView(this); candidateScroll.setHorizontalScrollBarEnabled(false);
         candidateRow = new LinearLayout(this); candidateRow.setOrientation(LinearLayout.HORIZONTAL);
         candidateScroll.addView(candidateRow, new HorizontalScrollView.LayoutParams(-2, -1));
@@ -201,6 +204,8 @@ public final class KotoImeService extends InputMethodService {
         LinearLayout toolbar = row(board, 44);
         key(toolbar, "←", null, d -> { if (prepareEdit()) session.cursor(-1); changed(); }, 1, true, false);
         key(toolbar, "→", null, d -> { if (prepareEdit()) session.cursor(1); changed(); }, 1, true, false);
+        KeyView cancel=key(toolbar,"取消",null,d->{ session.discard(); changed(); },1,false,false);
+        cancel.setContentDescription("キーボード内の未確定入力をすべて取り消す");
         key(toolbar,session.incognito() ? "私用 ON" : "私用 OFF",null,d -> {
             prefs.edit().putBoolean("incognito",!LearningStore.privateMode(prefs)).apply();
             syncPrivacy(); render();
@@ -286,7 +291,7 @@ public final class KotoImeService extends InputMethodService {
     private void updateEnterKey() {
         if (enterKey == null) return;
         enterKey.label(enterLabel());
-        enterKey.setContentDescription(session.text().isEmpty() ? action.description() : "変換中の単語を確定");
+        enterKey.setContentDescription(session.text().isEmpty() ? action.description() : "キーボード内の未確定入力を入力欄へ確定");
     }
     private void changed() {
         refreshCandidates();
@@ -339,6 +344,7 @@ public final class KotoImeService extends InputMethodService {
     private void refreshCandidates() {
         if (candidateRow == null || status == null) return;
         boolean privacyReady=syncPrivacy();
+        updatePreedit();
         candidateRow.removeAllViews();
         LearningCoordinator.State learnedState=learning.state();
         if (previewSource!=null && previewSource.learned && !currentLearned(previewSource,session.text())) {
@@ -347,14 +353,15 @@ public final class KotoImeService extends InputMethodService {
         String learningLabel=learnedState.busy ? "学習データ処理中" : learnedState.failed ? "保存エラー · 学習停止"
                 : session.incognito() || !session.policy().learning ? "私用 · 学習 OFF"
                 : learnedState.days==0 ? "学習 OFF" : "端末内学習 " + learnedState.days + "日";
-        status.setText(editor!=null && editor.compositionNeedsRestart() ? "Koto · 変換停止 · 入力欄を切り替えて再開してください"
-            : editor!=null && editor.compositionRejected() ? "Koto · 入力欄が未確定入力を受け付けません"
+        status.setText(session.limitReached() ? "Koto · 256字まで · 確定してから続けてください"
+            : editor!=null && editor.commitRejected() ? session.policy().candidates
+                ? "Koto · 確定できません · 読みはキーボード内に保持" : "Koto · 入力欄へ送れませんでした"
             : session.policy().password ? "Koto · パスワード · 候補 OFF"
             : session.policy().noPersonalizedLearning ? "Koto · プライベート入力 · 学習 OFF"
             : !session.policy().candidates ? "Koto · 直接入力 · 候補 OFF"
             : dictionaryFailed ? "Koto · 辞書を読み込めません · かな入力"
             : dictionary == null ? "Koto · 辞書を準備中 · 学習 OFF"
-            : "Koto · SKK 変換 · " + learningLabel);
+            : "Koto · 未確定 " + session.text().codePointCount(0,session.text().length()) + "/256 · " + learningLabel);
         String reading = session.text();
         if (!privacyReady || !session.hasCandidates()) {
             clearCandidateState();
@@ -363,8 +370,8 @@ public final class KotoImeService extends InputMethodService {
             hint.setText(!privacyReady ? "入力欄が仮選択の解除を受け付けません。学習停止中です"
                 : session.policy().password ? "候補表示・入力の保存はありません"
                 : !session.policy().candidates ? "この入力欄では候補を使いません"
-                : session.mode() != InputSession.Mode.KANA ? "英字・記号は直接入力。かなで単語変換できます"
-                : "単語を入力 → 候補をタップ / 変換 → 確定");
+                : session.mode() != InputSession.Mode.KANA ? "英字・記号もキーボード内で編集 · 確定で入力欄へ"
+                : "キーボード内の読み → 候補タップ / 確定で入力欄へ");
             candidateRow.addView(hint, new LinearLayout.LayoutParams(-2, -1)); return;
         }
         String katakana = FlickLayout.katakana(reading);
@@ -406,6 +413,22 @@ public final class KotoImeService extends InputMethodService {
                     candidateScroll.smoothScrollTo(candidateRow.getChildAt(position).getLeft(), 0);
             });
         }
+    }
+    private void updatePreedit() {
+        if (preedit==null) return;
+        if (!session.policy().candidates) {
+            preedit.setText(""); preedit.setContentDescription(""); preedit.setVisibility(View.GONE); return;
+        }
+        preedit.setVisibility(View.VISIBLE);
+        String value=session.displayed();
+        preedit.setText(value.isEmpty() ? "未確定の読み · 確定で入力欄へ" : value);
+        preedit.setContentDescription(value.isEmpty() ? "キーボード内の未確定入力はありません"
+            : session.preview().isEmpty() ? "未送信の読み: "+value : "仮選択: "+value+"、読み: "+session.text());
+        long revision=session.revision();
+        preedit.post(()->{
+            if (preedit!=null && revision==session.revision() && preedit.getLayout()!=null)
+                preedit.scrollTo(0,Math.max(0,preedit.getLayout().getHeight()-preedit.getHeight()));
+        });
     }
     @Override public void onDestroy() {
         destroyed = true; learning.removeListener(learningChanged); session.choices(null);

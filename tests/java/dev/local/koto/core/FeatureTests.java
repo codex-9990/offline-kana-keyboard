@@ -58,10 +58,9 @@ public final class FeatureTests {
         List<LearningData.Entry> suggest(String r) { return coordinator.state().suggest(r,NORMAL,false,now); }
     }
     private static final class Editor implements InputSession.Editor {
-        boolean accepting=true; String composing="",committed="";
-        @Override public boolean composing(String s) { if (accepting) composing=s; return accepting; }
-        @Override public boolean commit(String s) { if (accepting) { committed+=s; composing=""; } return accepting; }
-        @Override public void finish() { committed+=composing; composing=""; }
+        boolean accepting=true; String committed="";
+        @Override public boolean commit(String s) { if (accepting) committed+=s; return accepting; }
+        @Override public void finish() { }
         @Override public void delete() {}
         @Override public void cursor(int d) {}
         @Override public void enter() {}
@@ -84,7 +83,7 @@ public final class FeatureTests {
             List<String> choices=new ArrayList<>(); Editor e=new Editor(); InputSession s=session(e,choices,1,0);
             s.type("にほん"); s.preview("日本",s.revision()); yes(choices.isEmpty()); s.enter(); eq(1,choices.size());
             s.type("とうきょう"); s.select("東京",s.revision()); eq(2,choices.size());
-            s.type("かんじ"); s.preview("漢字",s.revision()); s.space(); eq(3,choices.size());
+            s.type("かんじ"); s.preview("漢字",s.revision()); s.confirm(); eq(3,choices.size());
             s.type("かな"); s.enter(); eq(3,choices.size());
         });
         test("typing modes cursor hide and lifecycle never learn implicit commits",()->{
@@ -92,7 +91,7 @@ public final class FeatureTests {
                 List<String> choices=new ArrayList<>(); Editor e=new Editor(); InputSession s=session(e,choices,1,0);
                 s.type("にほん"); s.preview("日本",s.revision());
                 switch(action) { case 0:s.type("あ");break; case 1:s.mode(InputSession.Mode.ENGLISH);break;
-                    case 2:s.cursor(1);break; case 3:s.selectionMovedOutsideComposition();break;
+                    case 2:s.cursor(1);break; case 3:s.discard();break;
                     case 4:s.finish();break; default:s.start(new Editor(),NORMAL); }
                 yes(choices.isEmpty());
             }
@@ -129,16 +128,17 @@ public final class FeatureTests {
             List<String> choices=new ArrayList<>(); Editor e=new Editor(); InputSession s=session(e,choices,1,0);
             boolean[] setting={false}; s.type("にほん"); s.preview("日本",s.revision()); long old=s.revision();
             setting[0]=true; yes(s.syncIncognito(()->setting[0])); yes(s.incognito()); eq("",s.preview());
-            eq("にほん",e.composing); no(s.select("日本",old)); s.select("日本",s.revision()); yes(choices.isEmpty());
+            eq("にほん",s.text()); no(s.select("日本",old)); s.select("日本",s.revision()); yes(choices.isEmpty());
             setting[0]=false; yes(s.syncIncognito(()->setting[0])); no(s.incognito());
             s.type("とうきょう"); s.select("東京",s.revision()); eq(1,choices.size());
         });
-        test("privacy preference read failures fail closed and host restoration failures are reported",()->{
+        test("privacy read failure cancels local preview even when the host rejects confirmation",()->{
             List<String> choices=new ArrayList<>(); Editor e=new Editor(); InputSession s=session(e,choices,1,0);
             s.type("にほん"); s.preview("日本",s.revision()); e.accepting=false;
-            no(s.syncIncognito(()->{ throw new IllegalStateException("Synthetic preference failure"); }));
-            yes(s.incognito()); eq("日本",s.preview()); s.enter(); yes(choices.isEmpty());
-            e.accepting=true; yes(s.cancelPreview()); eq("にほん",e.composing);
+            yes(s.syncIncognito(()->{ throw new IllegalStateException("Synthetic preference failure"); }));
+            yes(s.incognito()); eq("",s.preview()); eq("にほん",s.text()); eq("",e.committed);
+            s.enter(); yes(choices.isEmpty()); yes(s.type("ご")); eq("にほんご",s.text());
+            e.accepting=true; yes(s.confirm()); eq("にほんご",e.committed); yes(choices.isEmpty());
         });
         test("current privacy gates retained learned snapshots and recording before listeners run",()->{
             Fixture f=new Fixture(); f.enable(7); f.pick("にほん","日本"); f.run();

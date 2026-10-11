@@ -19,14 +19,13 @@ public final class CoreTests {
     private static void yes(boolean condition) { if (!condition) throw new AssertionError("Expected true"); }
     private static void no(boolean condition) { yes(!condition); }
     private static final class Editor implements InputSession.Editor {
-        String committed = "", composition = "";
+        String committed = "";
         int deletes, cursor, enters;
         boolean accepting = true;
-        @Override public boolean composing(String value) { if (accepting) composition = value; return accepting; }
         @Override public boolean commit(String value) {
-            if (accepting) { committed += value; composition = ""; } return accepting;
+            if (accepting) committed += value; return accepting;
         }
-        @Override public void finish() { committed += composition; composition = ""; }
+        @Override public void finish() { }
         @Override public void delete() { deletes++; }
         @Override public void cursor(int direction) { cursor += direction; }
         @Override public void enter() { enters++; }
@@ -54,13 +53,11 @@ public final class CoreTests {
             eq("ぁ",FlickLayout.modifyLast("あ")); eq("ゔ",FlickLayout.modifyLast("ぅ"));
             eq("😀",FlickLayout.modifyLast("😀")); eq("",FlickLayout.modifyLast(""));
         });
-        test("kana composition and candidate replace", () -> {
-            Editor e = new Editor(); InputSession s = start(e,1,0);
-            s.type("に"); s.type("ほ"); s.type("ん"); eq("にほん",e.composition);
-            eq("",e.committed); yes(s.hasCandidates()); s.select("日本");
-            eq("日本",e.committed); eq("",s.text()); no(s.hasCandidates());
-            s.type("あ"); s.enter(); eq("日本あ",e.committed); eq(0,e.enters);
-            s.enter(); eq(1,e.enters);
+        test("kana preedit remains local until explicit candidate confirmation", () -> {
+            Editor e=new Editor(); InputSession s=start(e,1,0);
+            yes(s.type("に")); yes(s.type("ほ")); yes(s.type("ん")); eq("にほん",s.text()); eq("",e.committed);
+            yes(s.hasCandidates()); yes(s.select("日本")); eq("日本",e.committed); eq("",s.text());
+            yes(s.type("あ")); s.enter(); eq("日本あ",e.committed); eq(0,e.enters); s.enter(); eq(1,e.enters);
         });
         test("composition deletion is Unicode codepoint safe", () -> {
             Editor e = new Editor(); InputSession s = start(e,1,0);
@@ -68,18 +65,17 @@ public final class CoreTests {
             s.backspace(); eq("",s.text()); eq("",e.committed);
             s.backspace(); eq(1,e.deletes);
         });
-        test("mode change commits once; shift is one-shot", () -> {
-            Editor e = new Editor(); InputSession s = start(e,1,0);
-            s.type("か"); s.mode(InputSession.Mode.ENGLISH); eq("か",e.committed);
-            s.shift(); s.type("a"); s.type("b"); eq("かAb",e.committed); no(s.shifted());
-            s.mode(InputSession.Mode.SYMBOLS); s.type("@"); eq("かAb@",e.committed);
+        test("mode changes preserve local reading and shift is one-shot", () -> {
+            Editor e=new Editor(); InputSession s=start(e,1,0); yes(s.type("か")); s.mode(InputSession.Mode.ENGLISH);
+            s.shift(); yes(s.type("a")); yes(s.type("b")); s.mode(InputSession.Mode.SYMBOLS); yes(s.type("@"));
+            eq("かAb@",s.text()); eq("",e.committed); no(s.shifted()); yes(s.confirm()); eq("かAb@",e.committed);
         });
         test("all Android password variations: direct input, no candidate or buffer", () -> {
             int[] types = {0x81,0x91,0xe1,0x12};
             for (int type : types) {
                 Editor e = new Editor(); InputSession s = start(e,type,0);
                 yes(s.policy().password); s.type("SyntheticOnly42");
-                eq("",s.text()); eq("",e.composition); no(s.hasCandidates());
+                eq("",s.text()); eq("",s.preview()); no(s.hasCandidates());
                 eq("SyntheticOnly42",e.committed); s.mode(InputSession.Mode.KANA); s.type("あ");
                 eq("",s.text()); no(s.hasCandidates());
             }
@@ -97,84 +93,75 @@ public final class CoreTests {
             Editor e = new Editor(); InputSession s = start(e,0x80001,0);
             s.type("かな"); eq("かな",e.committed); no(s.hasCandidates()); eq("",s.text());
         });
-        test("email, web email and URI fields default to English", () -> {
-            for (int type : new int[]{0x11,0x21,0xd1}) {
-                Editor e = new Editor(); InputSession s = start(e,type,0);
-                eq(InputSession.Mode.ENGLISH,s.mode()); s.type("x"); eq("x",e.committed);
+        test("email web email and URI fields use local English preedit", () -> {
+            for (int type:new int[]{0x11,0x21,0xd1}) {
+                Editor e=new Editor(); InputSession s=start(e,type,0); eq(InputSession.Mode.ENGLISH,s.mode());
+                yes(s.type("x")); eq("x",s.text()); eq("",e.committed); yes(s.confirm()); eq("x",e.committed);
             }
         });
-        test("cursor action commits current composition", () -> {
-            Editor e = new Editor(); InputSession s = start(e,1,0);
-            s.type("ねこ"); s.cursor(-1); eq("ねこ",e.committed); eq(-1,e.cursor); eq("",s.text());
+        test("cursor action preserves local draft without sending it", () -> {
+            Editor e=new Editor(); InputSession s=start(e,1,0); s.type("ねこ"); s.cursor(-1);
+            eq("",e.committed); eq(-1,e.cursor); eq("ねこ",s.text()); s.confirm(); eq("ねこ",e.committed);
         });
-        test("space commits a word and inserts a direct space without leftover composition", () -> {
-            Editor e = new Editor(); InputSession s = start(e,1,0);
-            s.space(); eq(" ",e.committed); eq("",s.text()); no(s.hasCandidates());
-            s.type("かな"); s.space(); eq(" かな ",e.committed); eq("",s.text());
+        test("space appends locally and only confirmation sends it", () -> {
+            Editor e=new Editor(); InputSession s=start(e,1,0); s.space(); s.type("かな"); s.space();
+            eq(" かな ",s.text()); eq("",e.committed); yes(s.confirm()); eq(" かな ",e.committed);
         });
-        test("outside selection and hide keep editor text, clear transient state", () -> {
-            Editor e = new Editor(); InputSession s = start(e,1,0);
-            s.type("かな"); s.selectionMovedOutsideComposition(); eq("かな",e.committed); eq("",s.text());
-            s.type("にほん"); s.finish(); eq("かなにほん",e.committed); eq("",s.text());
-            s.type("bad"); eq("かなにほん",e.committed);
+        test("cancel hide and finished input never send an unconfirmed draft", () -> {
+            Editor e=new Editor(); InputSession s=start(e,1,0); s.type("かな"); s.discard();
+            eq("",e.committed); eq("",s.text()); s.type("にほん"); s.finish(); eq("",e.committed); eq("",s.text());
+            no(s.type("bad")); eq("",e.committed);
         });
         test("lifecycle restart model does not copy text across fields", () -> {
             Editor first = new Editor(), second = new Editor(); InputSession s = start(first,1,0);
             s.type("かな"); s.finish(); s.start(second,FieldPolicy.from(0x81,0)); s.type("x");
-            eq("かな",first.committed); eq("x",second.committed); eq("",s.text());
+            eq("",first.committed); eq("x",second.committed); eq("",s.text());
         });
-        test("rotation model: finish span then restart yields no duplicate", () -> {
-            Editor e = new Editor(); InputSession s = start(e,1,0);
-            s.type("かな"); s.selectionMovedOutsideComposition(); s.finish();
-            s.start(e,FieldPolicy.from(1,0)); s.type("は"); s.commitComposition(); eq("かなは",e.committed);
+        test("same-session relayout preserves draft and fresh restart discards it", () -> {
+            Editor e=new Editor(); InputSession s=start(e,1,0); s.type("かな"); long old=s.revision(); s.relayout();
+            eq("かな",s.text()); no(s.preview("仮名",old)); eq("",e.committed);
+            s.start(e,FieldPolicy.from(1,0)); eq("",s.text()); s.type("は"); s.confirm(); eq("は",e.committed);
         });
-        test("failed host writes retain existing composing text", () -> {
-            Editor e = new Editor(); InputSession s = start(e,1,0);
-            s.type("あ"); e.accepting = false; s.type("い"); eq("あ",s.text());
-            s.backspace(); eq("あ",s.text()); s.select("亜"); eq("あ",s.text());
-            s.commitComposition(); eq("あ",s.text());
-            s.mode(InputSession.Mode.ENGLISH); eq(InputSession.Mode.KANA,s.mode());
-            s.cursor(1); eq(0,e.cursor);
+        test("failed confirmation keeps draft editable without lockout or implicit commit", () -> {
+            Editor e=new Editor(); InputSession s=start(e,1,0); s.type("あ"); e.accepting=false;
+            yes(s.type("い")); eq("あい",s.text()); no(s.confirm()); eq("あい",s.text());
+            s.backspace(); eq("あ",s.text()); s.mode(InputSession.Mode.ENGLISH); yes(s.type("b")); s.cursor(1);
+            eq("あb",s.text()); eq(1,e.cursor); eq("",e.committed); e.accepting=true; yes(s.confirm()); eq("あb",e.committed);
         });
-        test("bounded composition protects typing responsiveness", () -> {
-            Editor e = new Editor(); InputSession s = start(e,1,0);
-            for (int i=0;i<65;i++) s.type("あ"); eq(64,e.committed.length()); eq("あ",s.text());
+        test("explicit preedit limit never auto commits and confirmation allows continuous entry", () -> {
+            Editor e=new Editor(); InputSession s=start(e,1,0);
+            for(int i=0;i<InputSession.MAX_PREEDIT_CODE_POINTS;i++) yes(s.type("😀"));
+            no(s.type("あ")); yes(s.limitReached()); eq(256,s.text().codePointCount(0,s.text().length())); eq("",e.committed);
+            s.backspace(); yes(s.type("あ")); no(s.limitReached()); yes(s.confirm()); yes(s.type("い")); eq("い",s.text());
         });
-        test("candidate preview keeps reading and confirms before continuing kana", () -> {
-            Editor e = new Editor(); InputSession s = start(e,1,0);
-            s.type("にほん"); yes(s.preview("日本",s.revision()));
-            eq("にほん",s.text()); eq("日本",e.composition); eq("",e.committed);
-            s.type("ご"); eq("日本",e.committed); eq("ご",s.text()); eq("",s.preview());
-            s.enter(); eq("日本ご",e.committed); s.enter(); eq(1,e.enters);
+        test("typing after local preview restores reading and accepts the next key once", () -> {
+            Editor e=new Editor(); InputSession s=start(e,1,0); s.type("にほん"); yes(s.preview("日本",s.revision()));
+            eq("日本",s.displayed()); eq("",e.committed); yes(s.type("ご")); eq("にほんご",s.text()); eq("",s.preview());
+            s.enter(); eq("にほんご",e.committed); s.enter(); eq(1,e.enters);
         });
         test("backspace cancels preview before deleting reading", () -> {
             Editor e = new Editor(); InputSession s = start(e,1,0);
             s.type("にほん"); yes(s.preview("日本",s.revision())); s.backspace();
-            eq("にほん",s.text()); eq("にほん",e.composition); eq("",s.preview()); eq(0,e.deletes);
+            eq("にほん",s.text()); eq("にほん",s.text()); eq("",s.preview()); eq(0,e.deletes);
             s.backspace(); eq("にほ",s.text()); eq("",e.committed);
             yes(s.preview("二歩",s.revision())); s.modify(); eq("にぼ",s.text()); eq("",s.preview());
         });
-        test("mode, cursor, space and Enter commit the preview exactly once", () -> {
-            for (int operation=0;operation<4;operation++) {
-                Editor e = new Editor(); InputSession s = start(e,1,0);
-                s.type("はし"); yes(s.preview("橋",s.revision()));
-                if (operation==0) s.mode(InputSession.Mode.ENGLISH);
-                if (operation==1) s.cursor(-1);
-                if (operation==2) s.space();
-                if (operation==3) s.enter();
-                eq(operation==2 ? "橋 " : "橋",e.committed); eq("",s.text()); eq("",s.preview());
-                eq(0,e.enters); s.commitComposition(); eq(operation==2 ? "橋 " : "橋",e.committed);
+        test("only explicit confirmation sends a preview mode and cursor do not", () -> {
+            for(int operation=0;operation<4;operation++) {
+                Editor e=new Editor(); InputSession s=start(e,1,0); s.type("はし"); s.preview("橋",s.revision());
+                if(operation==0) s.mode(InputSession.Mode.ENGLISH);
+                if(operation==1) s.cursor(-1);
+                if(operation==2) s.space();
+                if(operation==3) s.enter();
+                if(operation==3) { eq("橋",e.committed); eq("",s.text()); no(s.confirm()); }
+                else { eq("",e.committed); yes(s.confirm()); eq(operation==0 ? "はし" : operation==1 ? "橋" : "はし ",e.committed); }
             }
         });
-        test("failed preview, confirmation and cancellation retain valid state", () -> {
-            Editor e = new Editor(); InputSession s = start(e,1,0);
-            s.type("にほん"); long revision=s.revision(); e.accepting=false;
-            no(s.preview("日本",revision)); eq(revision,s.revision()); eq("",s.preview());
-            e.accepting=true; yes(s.preview("日本",s.revision())); e.accepting=false;
-            s.type("ご"); s.mode(InputSession.Mode.ENGLISH); s.backspace();
-            eq("にほん",s.text()); eq("日本",s.preview()); eq("日本",e.composition);
-            eq(InputSession.Mode.KANA,s.mode()); eq("",e.committed);
-            e.accepting=true; s.backspace(); eq("にほん",e.composition); eq("",s.preview());
+        test("local preview cancellation and editing work when host confirmation fails", () -> {
+            Editor e=new Editor(); InputSession s=start(e,1,0); s.type("にほん"); e.accepting=false;
+            yes(s.preview("日本",s.revision())); no(s.confirm()); eq("日本",s.preview());
+            yes(s.cancelPreview()); s.backspace(); eq("にほ",s.text()); yes(s.type("ん"));
+            e.accepting=true; yes(s.confirm()); eq("にほん",e.committed);
         });
         test("stale candidate actions cannot replace repeated readings or new fields", () -> {
             Editor first = new Editor(); InputSession s = start(first,1,0); s.type("にほん");
@@ -184,13 +171,10 @@ public final class CoreTests {
             no(s.select("日本",stale)); eq("",second.committed);
             no(s.select(null)); no(s.select("")); eq("にほん",s.text());
         });
-        test("preview lifecycle and field switches preserve visible text without leakage", () -> {
-            Editor first = new Editor(), second = new Editor(); InputSession s = start(first,1,0);
-            s.type("にほん"); yes(s.preview("日本",s.revision()));
-            s.selectionMovedOutsideComposition(); eq("日本",first.committed); eq("",s.text()); eq("",s.preview());
-            s.finish(); eq("日本",first.committed); s.start(second,FieldPolicy.from(0x81,0)); s.type("x");
-            eq("x",second.committed); eq("",s.preview()); no(s.hasCandidates());
-            s.mode(InputSession.Mode.ENGLISH); s.shift(); s.selectionMovedOutsideComposition(); no(s.shifted());
+        test("unconfirmed preview is discarded on field change without leakage", () -> {
+            Editor first=new Editor(),second=new Editor(); InputSession s=start(first,1,0);
+            s.type("にほん"); s.preview("日本",s.revision()); s.discard(); eq("",first.committed); eq("",s.text());
+            s.start(second,FieldPolicy.from(0x81,0)); s.type("x"); eq("x",second.committed); no(s.hasCandidates());
         });
         test("restricted fields refuse candidate preview; FORCE_ASCII starts English", () -> {
             for (int type : new int[]{0x81,0x91,0xe1,0x12,0x80001}) {
@@ -198,7 +182,7 @@ public final class CoreTests {
                 no(s.preview("仮名",s.revision())); eq("",s.preview()); eq("",s.text()); eq("かな",e.committed);
             }
             Editor e = new Editor(); InputSession s = start(e,1,0x80000000);
-            eq(InputSession.Mode.ENGLISH,s.mode()); s.type("a"); eq("a",e.committed);
+            eq(InputSession.Mode.ENGLISH,s.mode()); s.type("a"); eq("",e.committed); eq("a",s.text()); s.confirm(); eq("a",e.committed);
             s = start(new Editor(),1,0x1000000); s.type("にほん"); yes(s.preview("日本",s.revision()));
             yes(s.policy().noPersonalizedLearning);
         });
