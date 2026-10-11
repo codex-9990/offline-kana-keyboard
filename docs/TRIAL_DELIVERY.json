@@ -2,12 +2,12 @@
   "artifact": {
     "file_name": "offline-kana-keyboard-0.1.6-trial.apk",
     "size_bytes": 512678,
-    "sha256": "2ba3e39ca74d7da11015be808a1014ed4fcde6e67ff77b4cab332bfe3505d9ff",
+    "sha256": "5bb7e8dcde0a9cb6f275bd6e97f6fe896b1aa6d63fadec1e124ac40f74c0910a",
     "development_trial": true,
     "debuggable": false,
     "version_name": "0.1.6",
     "version_code": 7,
-    "application_source_commit": "0aa62da1c7428341556a035864fd715be2212d61"
+    "application_source_commit": "a91012fa2d5b300c87032835d16fa41b6cf9b930"
   },
   "signer": {
     "certificate_sha256": "54d17f7d3afe53d1c06c74984aa976150b7336f1843ac0869fa28876856b84fe",
@@ -27,21 +27,24 @@
     ],
     "errors": 0,
     "warnings": 0,
-    "packaged_privacy_and_content_checks": "PASS: 20 checks",
+    "packaged_privacy_and_content_checks": "PASS: 24 checks including four packaged help instruction guards",
     "requested_permissions": 0,
     "application_payload_comparison": "PASS: all 10 unsigned/signed ZIP entries byte-identical",
     "tamper_detection": "PASS: deliberately altered DEX rejected",
     "backup": "Disabled; cloud backup and device transfer exclusions unchanged",
-    "core_host_groups": "PASS: 78 groups (36 core + 42 feature; updated local-preedit semantics)",
+    "core_host_groups": "PASS: 81 groups (36 core +45 feature; three new projection regressions included)",
     "android_api_adapter_groups": "PASS: 37 groups (14 adapter + 23 local-preedit); native runtime NOT RUN",
-    "source_checks": "PASS: 18 checks",
+    "source_checks": "PASS: 22 checks including four help instruction guards",
     "reported_composition_bug": "0.1.5 accepted-key loss reproduced as EXPECTED FAIL; local-preedit synthetic tests pass; reporting app/S24 resolution NOT established",
     "review_regressions": "Historical EXPECTED FAIL traces retained; span-ownership tracker/latch deleted; native Android NOT RUN",
     "bounded_sequence_cases": "PASS: 59,048 depth0-4 sequences; every accepted key and explicit confirmation exactly accounted; subsequent accepted input required; no lockout accepted",
     "callback_policy": "Selection callbacks do not own, send, discard or fence local draft; explicit confirmation writes at actual host selection after finishing host-owned composing style",
     "continuous_conversion": "PASS: 1,000 cycles, 4,000 accepted keys, 2,000 confirmations and complete host-text equality",
     "ux_tradeoff": "Ordinary kana/English/symbols stay in keyboard until explicit confirmation; hide/fresh field cancels draft; same-session relayout preserves but framework hide/restart can cancel; restricted fields direct",
-    "initial_build": "FAIL: stale deleted generated class; corrected with isolated generated-output cleanup; final clean build PASS"
+    "initial_build": "FAIL: stale deleted generated class; corrected with isolated generated-output cleanup; final clean build PASS",
+    "preedit_projection": "PASS: expired after relayout,clear/Off before/after worker,valid/restricted projection; visible/accessibility snapshot agrees with next confirmation; native views NOT RUN",
+    "help_negative_checks": "PASS: prior source rejects all4topics; actual archived prior APK rejects new help guard;32negative mutations rejected",
+    "held_prior_0_1_6_preservation": "PASS: previous APK/source/report/readiness bytes and hashes unchanged in local archive; no delivery"
   },
   "delivery": {
     "channel": "User Library",
@@ -117,5 +120,18 @@
     "preserved_unchanged": true,
     "library_delivery": "NOT PERFORMED",
     "known_regression": "Normal shorter conversion followed by accepted next kana before callbacks loses that key and can lock out further kana; release-blocking"
+  },
+  "prior_0.1.6_pre_help_review": {
+    "file_name": "offline-kana-keyboard-0.1.6-trial.apk",
+    "size_bytes": 512678,
+    "sha256": "2ba3e39ca74d7da11015be808a1014ed4fcde6e67ff77b4cab332bfe3505d9ff",
+    "development_trial": true,
+    "debuggable": false,
+    "version_name": "0.1.6",
+    "version_code": 7,
+    "application_source_commit": "0aa62da1c7428341556a035864fd715be2212d61",
+    "preserved_unchanged": true,
+    "delivery": "NOT PERFORMED; archived locally",
+    "review_findings": "Stale local-preedit help; learned preview displayed before expiry/clear invalidation"
   }
 }

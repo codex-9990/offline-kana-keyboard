@@ -28,4 +28,4 @@ The build output is unsigned. A separate signed development trial was verified u
 
 ## Stale-output failure and correction
 
-The first 0.1.6 build failed the new actual-DEX no-span-machinery check because a deleted EditorSelection.class remained in generated output. The failure log is retained separately. The builder now removes only its own generated app/build/aosp-debug directory before compiling; cached tools, earlier APKs and unrelated projects remain intact. The clean final build and all 20 packaged checks passed. No new build artifact or agreement was introduced.
+The first 0.1.6 build failed the new actual-DEX no-span-machinery check because a deleted EditorSelection.class remained in generated output. The failure log is retained separately. The builder now removes only its own generated app/build/aosp-debug directory before compiling; cached tools, earlier APKs and unrelated projects remain intact. The clean final build and all 24 packaged checks passed. No new build artifact or agreement was introduced.

@@ -6,6 +6,8 @@
 
 Version 0.1.6 replaces host composing-span recovery with a keyboard-local draft. Independent review found a release-blocking 0.1.5 sequence: にほん → choose 日本 → type ご before callbacks could lose the accepted ご and stop further kana. The new tests require every accepted key exactly once and continued conversion; lockout does not count as success. **The user's affected app/device has not been retested, so the reported failure is not claimed resolved.** See [composition change and tradeoff](docs/COMPOSITION.md).
 
+Independent review also found stale in-app help and a learned-preview display ordering error in the first held 0.1.6 packet. Settings now explain local drafts, explicit confirmation and hide/fresh-focus cancellation. Rendering cancels expired/cleared learned previews before taking one text/accessibility snapshot; three new host regressions verify that projection matches the next confirmation. Source and actual DEX help guards reject the old instructions. Native screen behavior remains untested.
+
 The signed trial is not debuggable, reuses the approved development certificate, and targets API 35 with minimum API 26. **Android emulator and Galaxy S24 validation remain NOT RUN.** The source and review packet are prepared; private replacement delivery is held pending independent review. It is not validated for daily use.
 
 ## Controls and editing
@@ -31,7 +33,7 @@ Limits: **128 records / 32 KiB**, one fixed no-backup data file plus one tempora
 
 The actual signed manifest requests **zero permissions**, disables debugging/backup/cleartext, protects the exported IME with BIND_INPUT_METHOD and keeps settings internal. Nine backup domains are excluded in legacy/cloud/device-transfer XML. Source/DEX checks found no network, logging, analytics, clipboard, speech, upload or surrounding-text read path. Ordinary unconfirmed text stays in keyboard RAM; confirmed and restricted direct text goes to the host app, which may transmit it. OS/root/privileged observers and memory erasure are outside the no-egress boundary. [Threat model](docs/THREAT_MODEL.md).
 
-PASS: **78 core/feature groups**, **37 Android API host groups**, **59,048 bounded sequences**, **1,000 continuous conversion cycles accounting for 4,000 accepted keys and 2,000 confirmations**, **18 source checks**, **20 signed APK checks**, v2/v3 signatures, payload equality and tamper rejection. These are synthetic/host/artifact checks. Real Binder/Looper, touch, native deletion, rotation, app-private storage/backup, the reporting app and S24 remain **NOT RUN**. Exact results and retained failures: [VERIFICATION.md](docs/VERIFICATION.md).
+PASS: **81 core/feature groups**, **37 Android API host groups**, **59,048 bounded sequences**, **1,000 continuous conversion cycles accounting for 4,000 accepted keys and 2,000 confirmations**, **22 source checks**, **24 signed APK checks**, v2/v3 signatures, payload equality and tamper rejection. These are synthetic/host/artifact checks. Real Binder/Looper, touch, native deletion, rotation, app-private storage/backup, the reporting app and S24 remain **NOT RUN**. Exact results and retained failures: [VERIFICATION.md](docs/VERIFICATION.md).
 
 ## Build, delivery and licensing
 
@@ -49,4 +51,4 @@ Outputs: dist/offline-kana-keyboard-0.1.6-trial-unsigned.apk and the separately 
 
 Application code, tests, docs and dictionary are **GPL-2.0-or-later**; original dictionary source/header, notices and GPL text are retained. Gradle wrapper utilities are separately Apache-2.0. No Sumire/Gboard/Mozc code or binary was adopted.
 
-Source: [codex-9990/offline-kana-keyboard](https://github.com/codex-9990/offline-kana-keyboard). Application commit: **0aa62da1c7428341556a035864fd715be2212d61**. APK SHA-256: **2ba3e39ca74d7da11015be808a1014ed4fcde6e67ff77b4cab332bfe3505d9ff**. Delivery route: the user's Library after the existing independent-review hold is cleared; **0.1.6 has not been uploaded**. No public APK release, device installation or new signing identity was created. Earlier APKs remain unchanged; 0.1.3–0.1.5 contain known composition regressions and should not be used for daily typing.
+Source: [codex-9990/offline-kana-keyboard](https://github.com/codex-9990/offline-kana-keyboard). Application commit: **a91012fa2d5b300c87032835d16fa41b6cf9b930**. APK SHA-256: **5bb7e8dcde0a9cb6f275bd6e97f6fe896b1aa6d63fadec1e124ac40f74c0910a**. Delivery route: the user's Library after the existing independent-review hold is cleared; **0.1.6 has not been uploaded**. No public APK release, device installation or new signing identity was created. Earlier APKs remain unchanged; 0.1.3–0.1.5 contain known composition regressions and should not be used for daily typing.

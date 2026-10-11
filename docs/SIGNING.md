@@ -4,15 +4,17 @@ Version **0.1.6**, Android version code **7**, reuses the existing approved deve
 
 - Filename: offline-kana-keyboard-0.1.6-trial.apk
 - Size: **512,678 bytes**
-- APK SHA-256: **2ba3e39ca74d7da11015be808a1014ed4fcde6e67ff77b4cab332bfe3505d9ff**
+- APK SHA-256: **5bb7e8dcde0a9cb6f275bd6e97f6fe896b1aa6d63fadec1e124ac40f74c0910a**
 - Certificate SHA-256: **54d17f7d3afe53d1c06c74984aa976150b7336f1843ac0869fa28876856b84fe**
-- Application source: **0aa62da1c7428341556a035864fd715be2212d61**
+- Application source: **a91012fa2d5b300c87032835d16fa41b6cf9b930**
 - Signature: PASS, v2/v3, API 26–35, one expected signer, zero errors/warnings.
 - Payload comparison: PASS, all 10 signed/unsigned ZIP entries byte-identical; CRC valid.
-- Signed APK checks: PASS,20, including zero permissions and no composing-span reclamation code.
+- Signed APK checks: PASS,24, including zero permissions and no composing-span reclamation code.
 - Tamper rejection: PASS, same four-argument verifier accepts valid control and rejects modified DEX with one signature error; temporary copies removed.
 - Delivery: user's Library after independent review;0.1.6 replacement NOT PERFORMED.
 - Installation/runtime QA: NOT RUN.
+
+The prior held0.1.6 APK (SHA-256 2ba3e39ca74d7da11015be808a1014ed4fcde6e67ff77b4cab332bfe3505d9ff) and its source/report/readiness packet are preserved in a local pre-help-review archive; none was uploaded. Use the current hash above for this correction. Version/code remain0.1.6/7 and the certificate is unchanged.
 
 ## Preserved earlier APKs
 

@@ -1,23 +1,27 @@
 # Verification report — 0.1.6 development trial
 
-Application source: **0aa62da1c7428341556a035864fd715be2212d61**. APK SHA-256 **2ba3e39ca74d7da11015be808a1014ed4fcde6e67ff77b4cab332bfe3505d9ff**, **512,678 bytes**, version code **7**. Signed with the existing approved certificate, debuggable=false. **Android emulator, Galaxy S24, the reporting app and conventional Gradle/lint remain NOT RUN.** No device action, new SDK agreement/key or public APK release occurred. Replacement delivery remains held pending independent review.
+Application source: **a91012fa2d5b300c87032835d16fa41b6cf9b930**. APK SHA-256 **5bb7e8dcde0a9cb6f275bd6e97f6fe896b1aa6d63fadec1e124ac40f74c0910a**, **512,678 bytes**, version code **7**. Signed with the existing approved certificate, debuggable=false. **Android emulator, Galaxy S24, the reporting app and conventional Gradle/lint remain NOT RUN.** No device action, new SDK agreement/key or public APK release occurred. Replacement delivery remains held pending independent review.
 
 ## Exact results
 
 | Check | Result | Scope |
 |---|---|---|
 | Production core | PASS — 36 groups | Flick mappings, local preedit/preview, Unicode deletion, explicit confirmation, modes, capacity, restricted/password policies and actions |
-| Feature regressions | PASS — 42 groups | Retention/quotas/queue bounds, live private-mode gates, failures/races, real Linux host files, layouts/sensitivity and heuristic phrase proposals |
+| Feature regressions | PASS — 45 groups | Retention/quotas/queue bounds, live private-mode gates, failures/races, real Linux host files, layouts/sensitivity and heuristic phrase proposals |
 | ConnectionEditor API adapter | PASS — 14 groups | Actual Android API signatures, synthetic InputConnection, injected native-key model; no native event loop |
 | Local-preedit editor | PASS — 23 groups | Separate host text/caret and local oracle; callbacks, flick/dictionary choice, delete/cancel/modes, focus/relayout, privacy, failure/retry |
 | Bounded sequences | PASS — 59,048 cases | Every length-0–4 string over nine operations, eight host/range/flush options; exact draft/preview/text/commit counts and accepted continuing key; no lockout accepted |
 | Continuous conversion | PASS — 1,000 cycles | 4,000 accepted keys, 2,000 expected confirmations; delayed/coalesced updates; complete expected host text |
 | 0.1.5 loss/lockout reproduction | EXPECTED FAIL — retained | にほん → 日本 → accepted ご before callbacks → flush loses ご on c186fb4; separately captured and not counted as final success |
 | Older historical reproductions | EXPECTED FAIL — retained | Original missing-bound first-kana loss; 0.1.3 stale cursor and stripped-span duplication; 0.1.4 coalesced preview/cancel |
-| Source policy | PASS — 18 checks | Zero permissions, no logs/network/surrounding reads, local preedit/no span reclamation, bounded no-backup learning, exports/intents/dependencies |
+| Preedit projection regression | PASS — 3 groups, included in45 feature groups | Expired after relayout; clear/Off before/after worker; valid/restricted echo policy; projected text/accessibility matches exact next confirmation |
+| Source/DEX help instruction guards | PASS — 4 each, included in22/24 totals | Actual settings constants and compiled strings require local/explicit/space/mode/cursor/hide/focus/privacy guidance and reject retired claims |
+| Instruction negative cases | PASS — 32 mutations | Missing behavior/section, duplicate section and retired statements are rejected |
+| Prior held0.1.6help artifact | EXPECTED FAIL — archived source/APK rejected | All four old-source topics fail; actual old signed APK fails new help guard; signature itself is not being alleged invalid |
+| Source policy | PASS — 22 checks | Zero permissions, no logs/network/surrounding reads, local preedit/no span reclamation, bounded no-backup learning, exports/intents/dependencies |
 | Initial 0.1.6 build | FAIL — corrected | New DEX guard caught deleted EditorSelection.class left in generated output; builder cleanup added; failed log retained |
 | Clean API compilation/resources/DEX | PASS | Existing pinned AOSP API 35 jar, AAPT2/D8; no SDK install/agreements |
-| Signed APK policy/content | PASS — 20 checks | Actual binary manifest version7/0.1.6, zero permissions, exports, debuggable=false, backup XML, dictionary/assets, DEX namespace/no composing machinery and alignment |
+| Signed APK policy/content | PASS — 24 checks | Actual binary manifest version7/0.1.6, zero permissions, exports, debuggable=false, backup XML, dictionary/assets, DEX namespace/no composing machinery and alignment |
 | Signature/certificate | PASS | apksig 8.7.3; v2/v3 API 26–35; one expected signer; zero errors/warnings |
 | Signed/unsigned payload | PASS — all 10 ZIP entries | Byte-identical application payloads and ZIP CRC checks |
 | Tamper rejection | PASS | Same four-argument verifier accepts valid control and rejects altered DEX with one signature error; temporary copies removed |
@@ -39,9 +43,17 @@ The updated tests require each accepted key exactly once according to explicit e
 
 Normal English/symbol text also stays local until 確定. Space appends rather than confirms. Hide/fresh focus discards unconfirmed input; relayout preserves it only within the same active session, and framework hide/restart on rotation can discard it. These deliberate UX limits and the lack of native deletion/rotation/S24 evidence remain material. The keyboard uses a licensed real dictionary and bounded heuristic phrases, not full Mozc conversion.
 
+## Review correction scope
+
+The first held0.1.6 packet had stale in-app instructions and rendered preedit before invalidating an expired/cleared learned preview. Current help describes the implemented local/explicit workflow, including hide/fresh-focus cancellation; source and packaged-string guards prevent the reviewed instructions from returning. Current rendering takes one immutable projection after cancellation, shared by visible/accessibility text, and retains active preview provenance across relayout. Three production core/coordinator projection groups pass; native Android TextView/accessibility remains NOT RUN.
+
+Four old held artifacts are preserved with their original hashes in a local archive. Current version/code remains0.1.6/7 because it has not been delivered or installed; source/APK hashes distinguish the correction. The historical initial stale-class build failure predates this help correction. No Library replacement was attempted.
+
 ## Evidence files
 
-- iteration-0.1.6-host-tests.txt: 36 core +42 feature groups and18 source checks.
+- iteration-0.1.6-host-tests.txt: 36 core +45 feature groups and22 source checks, including the three projection regressions.
+- iteration-0.1.6-help-guards.txt and help-before-review.txt: prior-source/actual-APK rejection plus32negative instruction mutations.
+- iteration-0.1.6-review-corrections.json: current correction scope and archived-artifact preservation.
 - iteration-0.1.6-adapter-tests.txt: 14 adapter +23 local-preedit groups,59,048 cases and1,000 conversion cycles.
 - iteration-0.1.6-lockout-before-fix.txt: expected failure on0.1.5.
 - iteration-0.1.6-initial-build.txt: failed stale-output guard; iteration-0.1.6-aosp-build.txt: final clean build.

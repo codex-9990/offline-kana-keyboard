@@ -29,9 +29,19 @@ NO_PERSONALIZED_LEARNING and manual private mode retain static local conversion 
 
 No coordinate history, input log, additional persistence or surrounding read was introduced. The preedit bound is transient RAM, separate from the existing 128-entry/32-KiB learning bounds. Host apps and a compromised OS remain outside the keyboard's no-egress boundary.
 
+## In-app instructions and learned-preview projection review
+
+Independent review of the first held0.1.6 packet found that SettingsActivity still described host-field preview, implicit confirmation by the next kana/ABC/arrows/space, and delivery of unconfirmed text. Those statements are removed. The help now explains ordinary kana/English/symbol local drafts; explicit candidate/確定 confirmation; typing/mode/space/cursor behavior; local cancel;256capacity; hide/fresh-focus/restart cancellation and restricted direct entry. The obsolete host-restoration error hint is removed too.
+
+The review also found refreshCandidates rendering preedit before invalidating an expired/cleared learned preview. The screen/accessibility could retain日本 while the session reverted toにほん. InputSession.preedit now cancels a non-current preview before returning one immutable text/description/visibility snapshot. The service computes current learned validity first and consumes that snapshot. Active preview provenance survives candidate-row clearing/relayout, so later expiry/clear checks remain available; cancelled/finished/fresh sessions clear it.
+
+Three new feature groups test expiration after relayout, clear/Off before or after worker completion, and valid/restricted projection. The projected visible text and accessibility description must reflect the reading before explicit confirmation, and that exact text must be committed. Stale actions are rejected and cancellation cannot relearn the invalidated choice. These are production snapshot/coordinator host tests plus inspected/compiled view binding, not a native TextView/accessibility execution result.
+
+Four help guards run on source constant text and the actual packaged DEX: input, learning, privacy and absence of retired claims. The prior source fails all four; the archived previously signed APK fails the new packaged-input-help guard.32negative mutations of required behavior/sections/retired claims are rejected. The original0.1.6 artifacts are preserved locally under dist/archive/0.1.6-before-help-review and have never been uploaded. Version0.1.6/code7 remains a held trial; only the current source/APK hashes identify this correction.
+
 ## Exact verification
 
-Application source: **0aa62da1c7428341556a035864fd715be2212d61**, version 0.1.6/code 7. PASS: **36 core + 42 feature groups; 14 adapter + 23 local-preedit API host groups; 18 source checks; 20 signed APK checks**, v2/v3 signature, ten-entry payload equality and controlled tamper rejection.
+Application source: **a91012fa2d5b300c87032835d16fa41b6cf9b930**, version 0.1.6/code 7. PASS: **36 core + 45 feature groups; 14 adapter + 23 local-preedit API host groups; 22 source checks; 24 signed APK checks**, v2/v3 signature, ten-entry payload equality and controlled tamper rejection.
 
 The API fixture models the physical host text/selection separately from an independent local-draft/preview/confirmation oracle. All **59,048** depth-0–4 sequences over nine operations (type, preview, cancel, delete, arrow, confirm, ordered flush, reported-position coalescing and no-motion coalescing), across eight range-omission/host-span/flush options, require accepted type calls to succeed, exact expected text and confirmation counts, then a further accepted/confirmed key. **Ignored accepted keys or lockout fail.** This is not exhaustive Android scheduling or a hostile-host proof.
 
