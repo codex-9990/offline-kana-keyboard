@@ -71,7 +71,7 @@ public final class InputSession {
     }
     public void shift() { shifted=!shifted; revision++; }
     public void mode(Mode next) { cancelPreview(); conversionRequested=false; mode=next; shifted=false; revision++; }
-    /** True means this key was accepted exactly once into preedit or the direct-entry host. */
+    /** True means accepted into local preedit or dispatched once; host application is not acknowledged. */
     public boolean type(String value) {
         if (editor==null || value==null || value.isEmpty()) return false;
         String next=mode==Mode.ENGLISH && shifted ? value.toUpperCase(java.util.Locale.ROOT) : value;

@@ -12,6 +12,8 @@ import android.widget.TextView;
 import android.widget.Button;
 import android.widget.RadioGroup;
 import android.widget.RadioButton;
+import android.widget.FrameLayout;
+import android.widget.Toast;
 import android.view.View;
 import dev.local.koto.core.FlickLayout;
 import dev.local.koto.core.FlickSensitivity;
@@ -30,6 +32,12 @@ public class SettingsActivity extends Activity {
     private Button clearLearning;
     private boolean clearing;
     private final List<KeyView> demoKeys=new ArrayList<>();
+    private SecureTouchFrame secureRoot;
+    private SharedPreferences controls;
+    private SeekBar heightSlider,sensitivitySlider;
+    private CheckBox hapticToggle,privateToggle;
+    private boolean refreshingControls;
+    private final SharedPreferences.OnSharedPreferenceChangeListener controlsChanged=(prefs,key)->refreshControls();
     private static final int[] PERIODS={0,1,7,30,90};
     private final Runnable learningChanged=this::updateLearning;
     protected int dp(float value) { return Math.round(value * getResources().getDisplayMetrics().density); }
@@ -41,29 +49,36 @@ public class SettingsActivity extends Activity {
         super.onCreate(state);
         ScrollView scroll = new ScrollView(this);
         content = new LinearLayout(this); content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(24), dp(40), dp(24), dp(36)); scroll.addView(content); setContentView(scroll);
+        content.setPadding(dp(24), dp(40), dp(24), dp(36)); scroll.addView(content);
+        secureRoot=new SecureTouchFrame(this,()->{ for (KeyView key:demoKeys) key.cancelGesture(); },
+                ()->Toast.makeText(this,"画面が重なっています。フローティングウィンドウを閉じてから操作してください。",Toast.LENGTH_SHORT).show());
+        secureRoot.addView(scroll,new FrameLayout.LayoutParams(-1,-1)); setContentView(secureRoot);
         text("Koto キーボード", 28);
         text("端末内の単語変換。ネットワーク権限なし。", 16);
         SharedPreferences prefs = getSharedPreferences("controls", MODE_PRIVATE);
+        controls=prefs;
         int height = Math.max(44, Math.min(76, prefs.getInt("row_height", 58)));
         TextView heightLabel = text("キーの高さ: " + height + " dp", 18);
         SeekBar slider = new SeekBar(this); slider.setMax(32); slider.setProgress(height - 44);
+        heightSlider=slider;
         slider.setContentDescription("キーの高さ。44 から 76 dp"); content.addView(slider);
         slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar view, int value, boolean user) {
                 heightLabel.setText("キーの高さ: " + (44 + value) + " dp");
-                if (user) prefs.edit().putInt("row_height", 44 + value).apply();
+                if (user && !refreshingControls) prefs.edit().putInt("row_height", 44 + value).apply();
             }
             @Override public void onStartTrackingTouch(SeekBar view) {}
             @Override public void onStopTrackingTouch(SeekBar view) {}
         });
         CheckBox haptic = new CheckBox(this); haptic.setText("キーの振動 (端末の振動設定に従う)");
+        hapticToggle=haptic;
         haptic.setChecked(prefs.getBoolean("haptics", false)); content.addView(haptic);
-        haptic.setOnCheckedChangeListener((view, value) -> prefs.edit().putBoolean("haptics", value).apply());
+        haptic.setOnCheckedChangeListener((view, value) -> { if (!refreshingControls) prefs.edit().putBoolean("haptics", value).apply(); });
         text("フリック感度",21);
         int distance=FlickSensitivity.clamp(prefs.getInt("flick_distance",FlickSensitivity.DEFAULT_DP));
         TextView distanceLabel=text("判定距離: " + distance + " dp（小さい値ほど高感度）",16);
         SeekBar flickSlider=new SeekBar(this); flickSlider.setMax(FlickSensitivity.MAX_DP-FlickSensitivity.MIN_DP);
+        sensitivitySlider=flickSlider;
         flickSlider.setProgress(distance-FlickSensitivity.MIN_DP);
         flickSlider.setContentDescription("フリック判定距離。8 から 40 dp。小さい値ほど短い動きでフリック"); content.addView(flickSlider);
         flickSlider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -71,7 +86,7 @@ public class SettingsActivity extends Activity {
                 int dp=FlickSensitivity.MIN_DP+value;
                 distanceLabel.setText("判定距離: " + dp + " dp（小さい値ほど高感度）");
                 for (KeyView key:demoKeys) key.flickDistance(dp);
-                if (user) prefs.edit().putInt("flick_distance",dp).apply();
+                if (user && !refreshingControls) prefs.edit().putInt("flick_distance",dp).apply();
             }
             @Override public void onStartTrackingTouch(SeekBar view) {}
             @Override public void onStopTrackingTouch(SeekBar view) {}
@@ -92,10 +107,11 @@ public class SettingsActivity extends Activity {
             demoKeys.add(key); pad.addView(key,new LinearLayout.LayoutParams(0,-1,1));
         }
         text("端末内の予測候補・保存期間",21);
-        text("初期設定はオフです。同梱辞書で完全一致する単語を候補タップ、またはキーボード内の仮選択を「確定」で明示的に確定し、入力先への送信に成功した場合だけ、"
+        text("初期設定はオフです。同梱辞書で完全一致する単語を候補タップ、またはキーボード内の仮選択を「確定」で明示的に送信し、送信処理がエラーを返さなかった場合だけ、"
                 + "読み・単語・最後に選んだ時刻をこのアプリ内に保存します。読みの前方一致にも候補として使います。"
+                + "送信後に入力先が文字制限などで反映しない場合があります。反映は確認できないため、その選択が学習に残ることがあります。"
                 + "空白・続けて入力・モード切替・カーソル移動では確定せず、学習もしません。"
-                + "通常の入力文や入力欄の周囲、取り消し、プレビューだけ、失敗した確定、分割候補は保存しません。",15);
+                + "通常の入力文や入力欄の周囲、取り消し、プレビューだけ、送信エラーが検出された選択、分割候補は保存しません。",15);
         learning=LearningStore.get(this);
         retention=new RadioGroup(this); retention.setOrientation(RadioGroup.VERTICAL);
         retention.setContentDescription("端末内学習の保存期間。初期はオフ"); content.addView(retention);
@@ -115,8 +131,9 @@ public class SettingsActivity extends Activity {
         clearLearning=new Button(this); clearLearning.setText("学習データをすべて削除"); content.addView(clearLearning);
         clearLearning.setOnClickListener(v->{ if (learning.clear()) { clearing=true; updateLearning(); } });
         CheckBox privateMode=new CheckBox(this); privateMode.setText("私用モード：学習と保存済み候補を使わない");
-        privateMode.setChecked(prefs.getBoolean("incognito",false)); content.addView(privateMode);
-        privateMode.setOnCheckedChangeListener((view,value)->prefs.edit().putBoolean("incognito",value).apply());
+        privateToggle=privateMode;
+        privateMode.setChecked(LearningStore.privateMode(prefs)); content.addView(privateMode);
+        privateMode.setOnCheckedChangeListener((view,value)->{ if (!refreshingControls) prefs.edit().putBoolean("incognito",value).apply(); });
         text("期限は最後に明示的に選んだ時刻からです。期限を過ぎた候補は使わず、次の起動・表示・候補読取り時に背景で整理します。"
                 + "アプリ停止中に指定時刻で削除する仕組みではありません。期間を短くすると古い記録を削除します。"
                 + "オフは記録を削除して保存を止めます。全削除後も期間設定は残り、以後の明示選択で新しく学習します。"
@@ -145,11 +162,16 @@ public class SettingsActivity extends Activity {
             + "同梱 SKK 辞書で変換します。長い読みには辞書で分割した候補も表示します（分割の表示）。"
             + "分割と一部の丁寧語の規則を使う簡易方式で、文脈・文法・名前を正確に判断するものではありません。"
             + "学習 OFF でも動作し、分割候補は保存しません。横画面はキー高さ 44 dp、全画面入力なし。", 16);
+        text("送信と直接入力: 入力先での反映は、このキーボードでは確認できません。入力先アプリで確認してください。"
+            + "自動で再送しません。送信後の再編集用に入力文を保持しません。"
+            + "直接入力のかなは「濁・小 選択」で完成した濁音・小文字を選びます。ひらがな・カタカナを切り替えできます。"
+            + "直前の文字は置換しません。すでに入力した文字の修正は、入力先で削除してから選び直してください。",16);
         text("手動辞書変換: 自動候補を要求しない通常の文章欄（候補禁止フラグ）でも、読みをキーボード内で編集できます。"
             + "読みを入力して「変換」を押したときだけ、同梱の固定辞書の候補を表示します。候補タップまたは「確定」で送ります。"
             + "保存済み学習の参照・保存と、自動の分割候補は行いません。読みを変更すると候補を閉じ、再び「変換」を押すまで表示しません。"
             + "メール・URL・英字優先（FORCE_ASCII）の欄は ABC から始まります。日本語は「かな」→読み→「変換」で手動変換します。"
-            + "英字キーはいつでも使えます。入力先が日本語の送信を拒否する場合は、読みを保持して編集・取消できます。"
+            + "英字キーはいつでも使えます。送信エラーを検出した場合は、読みを保持して編集・取消できます。"
+            + "エラーが返らず入力先が反映しない場合は検出できません。入力先で確認してください。"
             + "入力先の文字制限を回避する機能ではありません。パスワード・数値・電話・日時・種類不明の欄では手動変換もしません。", 16);
         text("プライバシー", 21);
         text("文章の入力履歴、クリップボード機能、音声入力はありません。パスワード欄では候補や未確定表示を行いません。"
@@ -185,10 +207,24 @@ public class SettingsActivity extends Activity {
         }
         learningStatus.setText(message);
     }
+    private void refreshControls() {
+        if (controls==null || privateToggle==null) return;
+        refreshingControls=true;
+        try {
+            privateToggle.setChecked(LearningStore.privateMode(controls));
+            heightSlider.setProgress(Math.max(44,Math.min(76,controls.getInt("row_height",58)))-44);
+            hapticToggle.setChecked(controls.getBoolean("haptics",false));
+            sensitivitySlider.setProgress(FlickSensitivity.clamp(controls.getInt("flick_distance",FlickSensitivity.DEFAULT_DP))-FlickSensitivity.MIN_DP);
+        } finally { refreshingControls=false; }
+    }
     @Override protected void onResume() {
-        super.onResume(); if (learning!=null) { learning.addListener(learningChanged); learning.maintain(); updateLearning(); }
+        super.onResume();
+        if (controls!=null) { controls.registerOnSharedPreferenceChangeListener(controlsChanged); refreshControls(); }
+        if (learning!=null) { learning.addListener(learningChanged); learning.maintain(); updateLearning(); }
     }
     @Override protected void onPause() {
+        if (controls!=null) controls.unregisterOnSharedPreferenceChangeListener(controlsChanged);
+        if (secureRoot!=null) secureRoot.resetInteraction();
         if (learning!=null) learning.removeListener(learningChanged);
         for (KeyView key:demoKeys) key.cancelGesture();
         if (demoStatus!=null) demoStatus.setText("お試し: 未入力");

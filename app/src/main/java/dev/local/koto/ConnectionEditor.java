@@ -37,7 +37,8 @@ public final class ConnectionEditor implements InputSession.Editor {
             // End any host-owned composition without replacing it. Then insert at
             // the host's actual selection, never an inferred or restored range.
             if (!connection.finishComposingText()) { commitRejected=true; return false; }
-            boolean accepted=connection.commitText(value,1); commitRejected=!accepted; return accepted;
+            // Android's remote wrapper reports dispatch, not the host's eventual application.
+            boolean dispatched=connection.commitText(value,1); commitRejected=!dispatched; return dispatched;
         } catch (AbstractMethodError | RuntimeException ignored) { commitRejected=true; return false; }
     }
     @Override public void finish() {

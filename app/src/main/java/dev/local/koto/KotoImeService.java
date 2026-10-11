@@ -30,6 +30,7 @@ import dev.local.koto.core.LearningCoordinator;
 import dev.local.koto.core.LearningData;
 import dev.local.koto.core.ConversionCandidate;
 import dev.local.koto.core.CandidateList;
+import dev.local.koto.core.DirectKanaLayout;
 import dev.local.koto.core.PhraseConverter;
 import dev.local.koto.core.PhraseRequests;
 import java.io.IOException;
@@ -46,7 +47,7 @@ public final class KotoImeService extends InputMethodService {
     private final ExecutorService loader = Executors.newSingleThreadExecutor();
     private SkkDictionary dictionary;
     private boolean destroyed, dictionaryFailed;
-    private FrameLayout frame;
+    private SecureTouchFrame frame;
     private LinearLayout board, candidateRow, keyArea;
     private TextView status,preedit;
     private HorizontalScrollView candidateScroll;
@@ -72,6 +73,7 @@ public final class KotoImeService extends InputMethodService {
     private EditorAction action = EditorAction.from(0,0,null);
     private ConnectionEditor editor;
     private int symbolPage;
+    private boolean directKanaPalette,directSmallKana,directKatakana;
 
     @Override public void onCreate() {
         super.onCreate();
@@ -100,8 +102,9 @@ public final class KotoImeService extends InputMethodService {
     }
     private int dp(float value) { return Math.round(value * getResources().getDisplayMetrics().density); }
     @Override public View onCreateInputView() {
-        frame = new FrameLayout(this); frame.setBackgroundColor(BACKGROUND);
-        frame.setFilterTouchesWhenObscured(true);
+        frame = new SecureTouchFrame(this,()->cancelKeyGestures(board),
+                ()->android.widget.Toast.makeText(this,"画面が重なっています。フローティングウィンドウを閉じてから入力してください。",android.widget.Toast.LENGTH_SHORT).show());
+        frame.setBackgroundColor(BACKGROUND);
         frame.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         board = new LinearLayout(this); board.setOrientation(LinearLayout.VERTICAL);
         board.setMotionEventSplittingEnabled(false); board.setPadding(dp(4), dp(4), dp(4), dp(8));
@@ -113,11 +116,13 @@ public final class KotoImeService extends InputMethodService {
     @Override public void onStartInput(EditorInfo info, boolean restarting) {
         super.onStartInput(info, restarting);
         cancelKeyGestures(board);
+        if (frame!=null) frame.resetInteraction();
         editor = new ConnectionEditor(getCurrentInputConnection(), info);
         session.start(editor, FieldPolicy.from(info.inputType, info.imeOptions));
         syncPrivacy();
         if (session.policy().learning && !session.incognito()) learning.maintain();
         action = editor.action(); symbolPage = 0;
+        directKanaPalette=directSmallKana=directKatakana=false;
         clearCandidateState();
         if (board != null) render();
     }
@@ -137,11 +142,13 @@ public final class KotoImeService extends InputMethodService {
     @Override public void onFinishInputView(boolean finishingInput) {
         // Unconfirmed local input is cancelled on hide; no text is sent implicitly.
         cancelKeyGestures(board);
+        if (frame!=null) frame.resetInteraction();
         session.discard(); clearCandidateState();
         super.onFinishInputView(finishingInput);
     }
     @Override public void onFinishInput() {
         cancelKeyGestures(board);
+        if (frame!=null) frame.resetInteraction();
         session.finish(); editor = null; clearCandidateState(); super.onFinishInput();
     }
     private void clearCandidateState() {
@@ -162,6 +169,7 @@ public final class KotoImeService extends InputMethodService {
     @Override public void onConfigurationChanged(Configuration configuration) {
         // Preserve the local draft while relayout keeps this input session active.
         cancelKeyGestures(board);
+        if (frame!=null) frame.resetInteraction();
         session.relayout(); clearCandidateState();
         super.onConfigurationChanged(configuration);
         if (board != null) render();
@@ -223,6 +231,9 @@ public final class KotoImeService extends InputMethodService {
     private void renderKeys() {
         if (keyArea == null) return;
         keyArea.removeAllViews();
+        if (directKanaPalette && !session.policy().candidates && session.mode()==InputSession.Mode.KANA) {
+            renderDirectKana(); updateEnterKey(); return;
+        }
         if (session.mode() == InputSession.Mode.KANA) {
             for (int r=0;r<4;r++) layoutRow(KeyboardLayout.kanaRow(r));
         } else if (session.mode() == InputSession.Mode.ENGLISH) {
@@ -250,8 +261,11 @@ public final class KotoImeService extends InputMethodService {
                 case CHAR: character(line,spec.value,spec.weight); continue;
                 case KANA:
                     if (spec.kana>=0) {
-                        key(line,spec.value,FlickLayout.key(spec.kana),d->{
-                            if (prepareEdit()) session.type(FlickLayout.kana(spec.kana,d)); changed();
+                        boolean katakana=directKatakana && !session.policy().candidates;
+                        String[] values=FlickLayout.key(spec.kana);
+                        for (int i=0;i<values.length;i++) values[i]=DirectKanaLayout.script(values[i],katakana);
+                        key(line,DirectKanaLayout.script(spec.value,katakana),values,d->{
+                            if (prepareEdit()) session.type(DirectKanaLayout.script(FlickLayout.kana(spec.kana,d),katakana)); changed();
                         },spec.weight,false,false); continue;
                     }
                     press=d->changeMode(InputSession.Mode.KANA); break;
@@ -259,7 +273,13 @@ public final class KotoImeService extends InputMethodService {
                 case SYMBOLS: press=d->changeMode(InputSession.Mode.SYMBOLS); break;
                 case PICKER: press=d->((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).showInputMethodPicker(); break;
                 case HIDE: press=d->requestHideSelf(0); break;
-                case MODIFY: press=d->{ if (prepareEdit()) session.modify(); changed(); }; break;
+                case MODIFY: press=d->{
+                    if (prepareEdit()) {
+                        if (session.policy().candidates) session.modify();
+                        else { directKanaPalette=true; directSmallKana=false; renderKeys(); }
+                    }
+                    changed();
+                }; break;
                 case DELETE: press=d->{ session.backspace(); changed(); }; break;
                 case CONVERT: press=d->cycleCandidate(); break;
                 case SPACE: press=d->space(); break;
@@ -268,9 +288,27 @@ public final class KotoImeService extends InputMethodService {
             }
             boolean repeat=spec.role==KeyboardLayout.Role.DELETE;
             String label=spec.role==KeyboardLayout.Role.ENTER ? enterLabel()
+                    : spec.role==KeyboardLayout.Role.MODIFY && !session.policy().candidates ? "濁・小\n選択"
                     : spec.role==KeyboardLayout.Role.SHIFT && session.shifted() ? "⇧ ON" : spec.value;
             KeyView view=key(line,label,null,press,spec.weight,repeat,spec.role==KeyboardLayout.Role.ENTER);
             if (spec.role==KeyboardLayout.Role.ENTER) enterKey=view;
+        }
+    }
+    private void renderDirectKana() {
+        LinearLayout controls=row(keyArea,44);
+        key(controls,directSmallKana ? "濁点" : "小かな",null,d->{ directSmallKana=!directSmallKana; renderKeys(); changed(); },1,false,false);
+        key(controls,directKatakana ? "ひらがな" : "カタカナ",null,d->{ directKatakana=!directKatakana; renderKeys(); changed(); },1.4f,false,false);
+        key(controls,"⌫",null,d->{ session.backspace(); changed(); },1,true,false);
+        key(controls,"戻る",null,d->{ directKanaPalette=false; renderKeys(); changed(); },1,false,false);
+        for (String[] values:DirectKanaLayout.rows(directSmallKana,directKatakana)) {
+            LinearLayout line=row(keyArea,rowHeight);
+            for (String value:values) {
+                KeyView view=key(line,value,null,d->{
+                    if (prepareEdit() && session.type(value)) { directKanaPalette=false; renderKeys(); }
+                    changed();
+                },1,false,false);
+                view.setContentDescription(value+"を直接入力。直前の文字は置き換えません");
+            }
         }
     }
     private void character(LinearLayout line, String text, float weight) {
@@ -292,7 +330,7 @@ public final class KotoImeService extends InputMethodService {
         if (!session.text().isEmpty()) return "確定";
         return action.label();
     }
-    private void changeMode(InputSession.Mode mode) { if (prepareEdit()) session.mode(mode); symbolPage=0; render(); }
+    private void changeMode(InputSession.Mode mode) { if (prepareEdit()) session.mode(mode); directKanaPalette=false; symbolPage=0; render(); }
     private void updateEnterKey() {
         if (enterKey == null) return;
         enterKey.label(enterLabel());
@@ -375,7 +413,8 @@ public final class KotoImeService extends InputMethodService {
             clearCandidateState();
             TextView hint = new TextView(this); hint.setTextColor(0xffb5c8c9); hint.setTextSize(13);
             hint.setPadding(dp(8), 0, 0, 0); hint.setGravity(Gravity.CENTER_VERTICAL);
-            hint.setText(session.policy().password ? "候補表示・入力の保存はありません"
+            hint.setText(directKanaPalette && !session.policy().candidates ? "完成文字を直接入力 · 直前の文字は置き換えません"
+                : session.policy().password ? "候補表示・入力の保存はありません"
                 : !session.policy().candidates ? session.policy().numeric
                     ? "数字・電話・日時は直接入力 · 辞書変換・学習 OFF" : "入力欄の種類が不明 · 直接入力のみ"
                 : session.policy().ascii ? "英字優先 · 日本語は「かな」→読み→「変換」 · 学習 OFF"
@@ -448,6 +487,7 @@ public final class KotoImeService extends InputMethodService {
         destroyed = true; learning.removeListener(learningChanged); session.choices(null);
         controls.unregisterOnSharedPreferenceChangeListener(controlsChanged);
         cancelKeyGestures(board); session.finish(); editor = null; clearCandidateState();
+        if (frame!=null) frame.resetInteraction();
         loader.shutdownNow(); main.removeCallbacksAndMessages(null);
         dictionary = null; board = null; keyArea = null; candidateRow = null; frame = null;
         super.onDestroy();

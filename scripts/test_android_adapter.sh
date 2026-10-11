@@ -18,6 +18,8 @@ mapfile -t core_sources < <(rg --files app/src/main/java/dev/local/koto/core -g 
 "${JAVA_HOME:?set JAVA_HOME to a complete JDK}/bin/javac" --release 8 -encoding UTF-8 -cp "$api_jar" \
   -d .build-cache/android-api-tests "${core_sources[@]}" app/src/main/java/dev/local/koto/ConnectionEditor.java \
   tests/android-api/dev/local/koto/ConnectionEditorHostTests.java \
-  tests/android-api/dev/local/koto/LocalPreeditHostTests.java
+  tests/android-api/dev/local/koto/LocalPreeditHostTests.java \
+  tests/android-api/dev/local/koto/DispatchContractHostTests.java
 "$JAVA_HOME/bin/java" -ea -cp "$api_jar:.build-cache/android-api-tests" dev.local.koto.ConnectionEditorHostTests
 "$JAVA_HOME/bin/java" -ea -cp "$api_jar:.build-cache/android-api-tests" dev.local.koto.LocalPreeditHostTests app/src/main/assets/skk.tsv
+"$JAVA_HOME/bin/java" -ea -cp "$api_jar:.build-cache/android-api-tests" dev.local.koto.DispatchContractHostTests

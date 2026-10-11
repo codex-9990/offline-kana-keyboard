@@ -27,6 +27,7 @@ public final class KeyView extends View {
     private final Runnable repeat = new Runnable() {
         @Override public void run() {
             if (!gesture.repeat()) return;
+            if (!isEnabled() || !isShown()) { cancelGesture(); return; }
             listener.press(0);
             if (gesture.repeat()) postDelayed(this, 85);
         }
@@ -113,6 +114,14 @@ public final class KeyView extends View {
     @Override public boolean performClick() {
         if (!isEnabled()) return false;
         super.performClick(); listener.press(clickDirection); return true;
+    }
+    @Override public void setEnabled(boolean enabled) {
+        if (!enabled && gesture!=null) cancelGesture();
+        super.setEnabled(enabled);
+    }
+    @Override protected void onVisibilityChanged(View changedView,int visibility) {
+        if (visibility!=VISIBLE && gesture!=null) cancelGesture();
+        super.onVisibilityChanged(changedView,visibility);
     }
     @Override protected void onDetachedFromWindow() { cancelGesture(); super.onDetachedFromWindow(); }
     @Override protected void onWindowVisibilityChanged(int visibility) {
