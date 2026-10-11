@@ -1,13 +1,13 @@
 {
   "artifact": {
-    "file_name": "offline-kana-keyboard-0.1.3-trial.apk",
+    "file_name": "offline-kana-keyboard-0.1.4-trial.apk",
     "size_bytes": 512678,
-    "sha256": "eac599e1a5d88657b907822c69989d912483dbcd69c80e27511ed7b532ffb1e4",
+    "sha256": "a59d345db489e7a6833ca9ea958f85f8782d06b33a4ced1f91ef92a2f0f47c65",
     "development_trial": true,
     "debuggable": false,
-    "version_name": "0.1.3",
-    "version_code": 4,
-    "application_source_commit": "479f18ccbf50a92d7e41fa907281392198c4fbc8"
+    "version_name": "0.1.4",
+    "version_code": 5,
+    "application_source_commit": "7ec8294534c3c8b99f0a6d096729c3bbb2947e19"
   },
   "signer": {
     "certificate_sha256": "54d17f7d3afe53d1c06c74984aa976150b7336f1843ac0869fa28876856b84fe",
@@ -33,12 +33,15 @@
     "tamper_detection": "PASS: deliberately altered DEX rejected",
     "backup": "Disabled; cloud backup and device transfer exclusions unchanged",
     "core_host_groups": "PASS: 78 groups (36 original + 42 feature)",
-    "android_api_adapter_groups": "PASS: 30 groups (14 adapter + 16 composing callback); native dispatch NOT RUN",
+    "android_api_adapter_groups": "PASS: 38 groups (14 adapter + 24 callback); native runtime NOT RUN",
     "source_checks": "PASS: 17 checks",
-    "reported_composition_bug": "Reproduced before fix in callback-aware host fixture; fixed fixture passes; user app Android retest NOT RUN"
+    "reported_composition_bug": "Reproduced before fix in callback-aware host fixture; fixed fixture passes; user app Android retest NOT RUN",
+    "review_regressions": "Both 0.1.3 source traces reproduced before fix; final tests pass; actual Android NOT RUN"
   },
   "delivery": {
     "channel": "User Library",
+    "status": "PREPARED LOCALLY; replacement held pending independent review",
+    "library_write_for_0.1.4": "NOT PERFORMED",
     "public_apk_release": "ABSENT",
     "receipt": "Delivery outcome tracked separately; no private Library identifiers published"
   },
@@ -80,5 +83,12 @@
     "sha256": "2ae7f36610cdee7e80276b4aa9ae02435897892825e370223ad54d8590a7564f",
     "debuggable": false,
     "preserved_unchanged": true
+  },
+  "historical_0.1.3": {
+    "file_name": "offline-kana-keyboard-0.1.3-trial.apk",
+    "sha256": "eac599e1a5d88657b907822c69989d912483dbcd69c80e27511ed7b532ffb1e4",
+    "debuggable": false,
+    "preserved_unchanged": true,
+    "known_regressions": "Acknowledged cursor positions stayed eligible; stripped spans with delayed callbacks duplicated readings"
   }
 }

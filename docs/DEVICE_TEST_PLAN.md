@@ -37,6 +37,7 @@ For emulator UI QA, dump a step-specific UI tree with `adb -s "$serial" exec-out
 | Rotation | Portrait/landscape during composition: text retained once in host, transient state cleared, no fullscreen extract | NOT RUN |
 | Lifecycle | Switch fields/apps rapidly, including the same kana reading twice; hide while holding delete; stop/restart IME process; stale candidate taps and repeat callbacks do not affect the next field | NOT RUN |
 | Reported composition failure | In the reporting app and a standard editor, flick に・ほ・ん sequentially, retain the underline/reading until explicit 日本 selection; test omitted/late callbacks, prefix preservation, NO_PERSONALIZED_LEARNING and private mode; check app-rejected recovery error | NOT RUN |
+| 0.1.3 combined regressions | Type に/ほ/ん with callbacks after each, then move cursor 3→1 and insert あ at the actual position; also test dropped spans plus delayed/coalesced bursts and preview/cancel; preceding host text must stay intact | NOT RUN |
 | Controls | Height extremes, default 58 dp, landscape 44 dp; haptic off/on and global Android setting | NOT RUN |
 | Insets/S24 | Gesture/button navigation, status of IME padding, cutout, accessibility scaling and One UI layouts | NOT RUN |
 | Local persistence | With learning OFF or raw marker typing, no lexical files; with explicit eligible choices and learning ON, only bounded no-backup lexical data and controls preferences; inspect backup/transfer eligibility | NOT RUN |

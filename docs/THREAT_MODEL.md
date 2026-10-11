@@ -39,7 +39,7 @@ A compromised OS can disregard manifests, inspect memory, capture input or trans
 
 Java String objects and Binder/editor copies cannot be reliably wiped. Clearing session/candidate references reduces retention but is not secure erasure. Accessibility and screen capture can observe normal on-screen candidates; password candidates are suppressed. The public launcher intentionally ignores inbound extras and stores no supplied input data.
 
-Original 0.1.0, 0.1.1 and 0.1.2 APKs are retained unchanged. The 0.1.3 trial keeps debugging disabled and uses the same approved development certificate. Android installation, runtime behavior and OEM transfer are untested. A public APK release needs separate approval. Signing files stay outside source/export archives.
+Original 0.1.0, 0.1.1, 0.1.2 and 0.1.3 APKs are retained unchanged. The 0.1.4 trial keeps debugging disabled and uses the same approved development certificate. Android installation, runtime behavior and OEM transfer are untested. A public APK release needs separate approval. Signing files stay outside source/export archives.
 
 Composition selection tracking stores only at most 64 transient coordinate records, with no strings or persistence. Known owned spans may be re-established through the host InputConnection; surrounding text is never read. Unknown anchors/rejected operations stop safely instead of guessing a host substring. Actual OEM/editor callback behavior is untested; see [COMPOSITION.md](COMPOSITION.md).
 
