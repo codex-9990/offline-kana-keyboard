@@ -2,7 +2,7 @@
 
 日本語 12 キー・フリック入力、端末内の SKK 単語候補、英語 QWERTY を備える Android キーボードの試作版です。ネットワーク権限、入力の学習・保存、広告、解析、音声入力、クリップボード機能はありません。
 
-This first version is aimed at portrait use on a Galaxy S24. It is a native Java `InputMethodService`, with no runtime dependencies or native libraries. The packaged APK targets Android 15 / API 35 and supports API 26+. Physical Galaxy S24 and Android emulator verification are still pending. **The delivered debug APK is unsigned and cannot be installed until an approved signing step is completed.**
+This first version is aimed at portrait use on a Galaxy S24. It is a native Java `InputMethodService`, with no runtime dependencies or native libraries. The packaged APK targets Android 15 / API 35 and supports API 26+. Physical Galaxy S24 and Android emulator verification are still pending. **A development-signed trial APK is available privately in the user's Library. Its v2/v3 signatures verify for API 26–35; this is not Android runtime testing.**
 
 ## What is implemented
 
@@ -43,7 +43,7 @@ Output:
 dist/offline-kana-keyboard-0.1.0-debug-unsigned.apk
 ```
 
-The build runs source and packaged APK policy checks. The APK contains debuggable code and is for review/testing, not a public release. A user-approved existing test key can be used for signing; no signing key is included in the source or deliverables. Debug signing key creation requires separate approval.
+The build runs source and packaged APK policy checks. Its output is unsigned. A separate development signing identity was created with user approval for the signed trial; signing credentials are excluded from the source and deliverables. The signed trial contains debuggable code and is for private review/testing. See [signing and certificate verification](docs/SIGNING.md).
 
 ## Conventional Android Gradle build
 
@@ -58,9 +58,9 @@ The wrapper pins Gradle 8.9, and the Android Gradle plugin is 8.7.3. SDK auto-do
 
 The SDK/Gradle build and Android lint were **not run in the saved environment** because the SDK and license approval were absent. The Maven-tooling compilation and APK audit succeeded separately.
 
-## Installation after approval and signing
+## Trial installation
 
-Obtain the signed test APK through a private workspace download, verify its SHA-256, and install it only after approving that device operation. This work did not install or enable the keyboard on a user's phone.
+Obtain `offline-kana-keyboard-0.1.0-debug-trial.apk` from the user's Library or a private workspace download, verify its SHA-256 against [the signing receipt](docs/SIGNING.md), and install it only after approving that device operation. This work did not install or enable the keyboard on a user's phone.
 
 On a Galaxy S24, use Settings → General management → Keyboard list and default to enable Koto, then select it as the current keyboard. Alternatively open Koto and tap the system settings/picker buttons; these actions happen only on a user's tap. Android's general keyboard warning is expected, because an IME receives typed characters. Follow [the device test plan](docs/DEVICE_TEST_PLAN.md) before relying on this build.
 
@@ -70,4 +70,4 @@ Application code, scripts, documentation and bundled SKK dictionary: **GPL-2.0-o
 
 The Gradle wrapper/scripts are separate Apache-2.0 build utilities, with their license in `third_party/gradle-wrapper/`. No Sumire/KazumaProject code or binaries were adopted. No Mozc library is shipped. See [conversion decisions and future integration](docs/CONVERSION.md).
 
-Source repository: [codex-9990/offline-kana-keyboard](https://github.com/codex-9990/offline-kana-keyboard). The user created this public repository for the reviewed source, license, build instructions and verification documentation. APK delivery remains private, and signing requires separate approval.
+Source repository: [codex-9990/offline-kana-keyboard](https://github.com/codex-9990/offline-kana-keyboard). The source and verification documentation are public. The development-signed trial is delivered privately through the user's Library; its public certificate fingerprint, artifact hash and verification status are recorded in [TRIAL_DELIVERY.json](docs/TRIAL_DELIVERY.json). No public APK release has been created.

@@ -1,0 +1,8 @@
+{
+  "artifact": "com.android.tools.build:apksig:8.7.3",
+  "url": "https://dl.google.com/dl/android/maven2/com/android/tools/build/apksig/8.7.3/apksig-8.7.3.jar",
+  "license": "Apache-2.0",
+  "sha256": "c070ed1394629d74641aa0906f60b2ffa1ee77e6366a1f93437f59717b1aeb89",
+  "sha1": "f005788487574c7d6ba23dea63bf8cb3a4f164a6",
+  "bytes": 506969
+}

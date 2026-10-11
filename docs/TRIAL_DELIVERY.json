@@ -1,0 +1,40 @@
+{
+  "artifact": {
+    "file_name": "offline-kana-keyboard-0.1.0-debug-trial.apk",
+    "size_bytes": 484006,
+    "sha256": "1c966eb5f24993d214c0b3a3ef48b09c181a25fa8067ad3804091a1c25367cd3",
+    "development_trial": true,
+    "debuggable": true
+  },
+  "signer": {
+    "certificate_sha256": "54d17f7d3afe53d1c06c74984aa976150b7336f1843ac0869fa28876856b84fe",
+    "purpose": "Development trial only",
+    "count": 1
+  },
+  "verification": {
+    "signature": "PASS",
+    "tool": "Google apksig 8.7.3 public API",
+    "schemes": [
+      "v2",
+      "v3"
+    ],
+    "checked_api_range": [
+      26,
+      35
+    ],
+    "errors": 0,
+    "warnings": 0,
+    "packaged_privacy_and_content_checks": "PASS: 17 checks",
+    "requested_permissions": 0,
+    "application_payload_comparison": "PASS: all 10 unsigned/signed ZIP entries byte-identical",
+    "tamper_detection": "PASS: deliberately altered DEX rejected",
+    "backup": "Disabled; cloud backup and device transfer exclusions unchanged"
+  },
+  "delivery": {
+    "channel": "User Library",
+    "status": "succeeded",
+    "public_apk_release": "ABSENT"
+  },
+  "android_runtime_qa": "NOT RUN",
+  "device_installation_and_ime_activation": "NOT PERFORMED"
+}
