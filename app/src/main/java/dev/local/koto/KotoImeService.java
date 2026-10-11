@@ -154,9 +154,8 @@ public final class KotoImeService extends InputMethodService {
     }
     @Override public void onUpdateSelection(int oldStart, int oldEnd, int newStart, int newEnd, int start, int end) {
         super.onUpdateSelection(oldStart, oldEnd, newStart, newEnd, start, end);
-        if (editor != null) editor.selection(newStart, newEnd);
-        if (!session.text().isEmpty() && (start < 0 || newStart != end || newEnd != end)) {
-            session.selectionMovedOutsideComposition(); clearCandidateState(); refreshCandidates();
+        if (editor != null && editor.updateSelection(session,oldStart,oldEnd,newStart,newEnd,start,end)) {
+            clearCandidateState(); refreshCandidates(); updateEnterKey();
         }
     }
     @Override public void onConfigurationChanged(Configuration configuration) {
@@ -348,7 +347,8 @@ public final class KotoImeService extends InputMethodService {
         String learningLabel=learnedState.busy ? "学習データ処理中" : learnedState.failed ? "保存エラー · 学習停止"
                 : session.incognito() || !session.policy().learning ? "私用 · 学習 OFF"
                 : learnedState.days==0 ? "学習 OFF" : "端末内学習 " + learnedState.days + "日";
-        status.setText(session.policy().password ? "Koto · パスワード · 候補 OFF"
+        status.setText(editor!=null && editor.compositionRejected() ? "Koto · 入力欄が未確定入力を受け付けません"
+            : session.policy().password ? "Koto · パスワード · 候補 OFF"
             : session.policy().noPersonalizedLearning ? "Koto · プライベート入力 · 学習 OFF"
             : !session.policy().candidates ? "Koto · 直接入力 · 候補 OFF"
             : dictionaryFailed ? "Koto · 辞書を読み込めません · かな入力"
