@@ -39,7 +39,9 @@ A compromised OS can disregard manifests, inspect memory, capture input or trans
 
 Java String objects and Binder/editor copies cannot be reliably wiped. Clearing session/candidate references reduces retention but is not secure erasure. Accessibility and screen capture can observe normal on-screen candidates; password candidates are suppressed. The public launcher intentionally ignores inbound extras and stores no supplied input data.
 
-Original 0.1.0 and 0.1.1 APKs are retained unchanged. The 0.1.2 trial keeps debugging disabled and uses the same approved development certificate. Android installation, runtime behavior and OEM transfer are untested. A public APK release needs separate approval. Signing files stay outside source/export archives.
+Original 0.1.0, 0.1.1 and 0.1.2 APKs are retained unchanged. The 0.1.3 trial keeps debugging disabled and uses the same approved development certificate. Android installation, runtime behavior and OEM transfer are untested. A public APK release needs separate approval. Signing files stay outside source/export archives.
+
+Composition selection tracking stores only at most 64 transient coordinate records, with no strings or persistence. Known owned spans may be re-established through the host InputConnection; surrounding text is never read. Unknown anchors/rejected operations stop safely instead of guessing a host substring. Actual OEM/editor callback behavior is untested; see [COMPOSITION.md](COMPOSITION.md).
 
 Learned records are plaintext inside the app UID boundary. A stopped app does not delete at an exact expiry clock tick. File removal/reference clearing is not physical secure erasure. Failed policy writes cannot establish durable settings guarantees; the UI reports failure. Clear does not remove host text, static dictionary entries or OS-level copies. [LOCAL_LEARNING.md](LOCAL_LEARNING.md) describes these limits.
 

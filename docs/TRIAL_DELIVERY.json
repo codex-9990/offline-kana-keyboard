@@ -1,13 +1,13 @@
 {
   "artifact": {
-    "file_name": "offline-kana-keyboard-0.1.2-trial.apk",
+    "file_name": "offline-kana-keyboard-0.1.3-trial.apk",
     "size_bytes": 512678,
-    "sha256": "2ae7f36610cdee7e80276b4aa9ae02435897892825e370223ad54d8590a7564f",
+    "sha256": "eac599e1a5d88657b907822c69989d912483dbcd69c80e27511ed7b532ffb1e4",
     "development_trial": true,
     "debuggable": false,
-    "version_name": "0.1.2",
-    "version_code": 3,
-    "application_source_commit": "a0fac115d6fe042f390d82fb2ffd30bf57d88d5f"
+    "version_name": "0.1.3",
+    "version_code": 4,
+    "application_source_commit": "479f18ccbf50a92d7e41fa907281392198c4fbc8"
   },
   "signer": {
     "certificate_sha256": "54d17f7d3afe53d1c06c74984aa976150b7336f1843ac0869fa28876856b84fe",
@@ -33,8 +33,9 @@
     "tamper_detection": "PASS: deliberately altered DEX rejected",
     "backup": "Disabled; cloud backup and device transfer exclusions unchanged",
     "core_host_groups": "PASS: 78 groups (36 original + 42 feature)",
-    "android_api_adapter_groups": "PASS: 14 synthetic groups; native event dispatch NOT RUN",
-    "source_checks": "PASS: 17 checks"
+    "android_api_adapter_groups": "PASS: 30 groups (14 adapter + 16 composing callback); native dispatch NOT RUN",
+    "source_checks": "PASS: 17 checks",
+    "reported_composition_bug": "Reproduced before fix in callback-aware host fixture; fixed fixture passes; user app Android retest NOT RUN"
   },
   "delivery": {
     "channel": "User Library",
@@ -73,5 +74,11 @@
     "surrounding_text": "Not captured",
     "phrase_candidates": "Heuristic and never saved",
     "android_private_storage_runtime": "NOT RUN"
+  },
+  "historical_0.1.2": {
+    "file_name": "offline-kana-keyboard-0.1.2-trial.apk",
+    "sha256": "2ae7f36610cdee7e80276b4aa9ae02435897892825e370223ad54d8590a7564f",
+    "debuggable": false,
+    "preserved_unchanged": true
   }
 }

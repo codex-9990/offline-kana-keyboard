@@ -1,6 +1,6 @@
-# Verification report — 0.1.2 development trial
+# Verification report — 0.1.3 development trial
 
-Application source: **a0fac115d6fe042f390d82fb2ffd30bf57d88d5f**. The APK is signed with the existing approved certificate and is not debuggable. **Android emulator, Galaxy S24 and conventional Gradle/lint checks remain NOT RUN.** No device was changed, SDK agreement accepted, key created or public APK release published.
+Application source: **479f18ccbf50a92d7e41fa907281392198c4fbc8**. The APK is signed with the existing approved certificate and is not debuggable. **Android emulator, Galaxy S24 and conventional Gradle/lint checks remain NOT RUN.** No device was changed, SDK agreement accepted, key created or public APK release published.
 
 ## Exact results
 
@@ -9,13 +9,15 @@ Application source: **a0fac115d6fe042f390d82fb2ffd30bf57d88d5f**. The APK is sig
 | Existing production-core regressions | PASS — 36 groups | Flick mappings, input/composition, password/restricted fields, actions, candidate/Unicode safety |
 | New feature regressions | PASS — 42 groups | Retention, quotas, queue bounds, stale choices, failure recovery, real host files, layouts, sensitivity, phrase proposals |
 | Production ConnectionEditor API adapter | PASS — 14 groups | Actual Android API signatures; synthetic InputConnection and injected key sender |
+| Callback-aware composing editor | PASS — 16 new groups | Visible text/span replacement, actual API signatures, queued/coalesced selection callbacks, flick release and dictionary selection |
+| Before-fix reproduction | EXPECTED FAIL — reproduced | 0.1.2's unchanged callback predicate clears the first に; captured separately, not counted as a final passing check |
 | Source policy | PASS — 17 checks | No network/logging/surrounding reads; six non-text controls; file I/O confined to fixed-name no-backup adapter on worker |
 | Java API compilation/resources/DEX | PASS | Existing pinned AOSP API 35 jar, Maven AAPT2 and D8 |
-| Signed APK policy/content | PASS — 19 checks | Version code 3/name 0.1.2, zero permissions, debuggable=false, exports, backup XML, dictionary/assets, DEX/alignment |
+| Signed APK policy/content | PASS — 19 checks | Version code 4/name 0.1.3, zero permissions, debuggable=false, exports, backup XML, dictionary/assets, DEX/alignment |
 | Signature/certificate | PASS | apksig 8.7.3; v2/v3, API 26–35, one expected signer, zero errors/warnings |
 | Signed/unsigned payload equality | PASS — all 10 ZIP entries | Application payload bytes identical |
 | Tamper rejection | PASS | DEX byte changed with signature block retained; verifier rejected it; temporary copy removed |
-| Earlier APK preservation | PASS | Original 0.1.0 and 0.1.1 hashes unchanged |
+| Earlier APK preservation | PASS | Original 0.1.0, 0.1.1 and delivered 0.1.2 hashes unchanged |
 | Unrelated project preservation | PASS | 175 tracked files unchanged; clean Git status |
 | Gradle build/lint/merged manifest | NOT RUN | SDK absent; alternative build's actual packaged manifest inspected |
 | Android install/IME registration/native events | NOT RUN | No SDK/emulator/KVM; no physical-device approval |
@@ -24,9 +26,13 @@ Application source: **a0fac115d6fe042f390d82fb2ffd30bf57d88d5f**. The APK is sig
 | Android rotation/focus/repeat/composition/editor actions | NOT RUN | Host state/adapter models pass; framework timing and native dispatch unobserved |
 | Runtime logs/files, airplane mode, S24 latency/insets/haptics | NOT RUN | No Android runtime assertions claimed |
 
-No unresolved failure remains in final executed checks. The first phrase regression exposed arbitrary okuri tails and a particle-absorbing homophone. Common-ending filtering and heuristic particle costs corrected the tested examples. This does not establish broad natural-language accuracy.
+No unresolved failure remains in final executed checks. The user's 0.1.2 report exposed a composition callback case that the earlier host tests did not cover. The new regression fails before the fix and passes with metadata tracking/span restoration. This establishes the modeled editor cases, not successful behavior in the user's actual app. The earlier phrase correction also does not establish broad natural-language accuracy.
 
 ## New test evidence
+
+The production service delegates selection callbacks to the adapter path under test. Missing candidate-range metadata and delayed self-generated callbacks previously called finishComposingText and emptied the reading. New transient coordinate tracking distinguishes expected writes from actual cursor/selection moves, including region-restoration callbacks. A known owned span is restored before replacing it, avoiding duplicated accumulated kana when an editor strips spans. Unsupported recovery or missing trustworthy anchors reject the operation and show a static error; there is no silent per-character commit fallback or surrounding-text read. At most 64 coordinate records are kept, without strings or persistence. See [COMPOSITION.md](COMPOSITION.md).
+
+Sixteen new groups verify normal/omitted/dropped spans, prefix preservation, immediate/delayed/coalesced callbacks, shorter candidate previews, cancellation/deletion, actual cursor/selection moves, NO_PERSONALIZED_LEARNING/manual private conversion without learning, password/NO_SUGGESTIONS direct input, rejected APIs, initial unknown selection, missing anchors, old commit/finish callbacks, restoration with unsupported batching, conflicting positive ranges and bounded metadata. Native Android/One UI callback timing remains NOT RUN.
 
 Tests verify Off/1/7/30/90 policies, expiry at the boundary, no renewal on lookup, shortening, no revival on extension/clock rollback, private/restricted fields, explicit successful choices only, prefix metadata retaining the complete reading, 10,000 repeated choices coalesced to one write, 32 pending choices/one worker/one notification, 128-entry and 32-KiB deterministic eviction, reload, malformed/oversized/duplicate/truncated storage, stale generations, clear during a pending or active write, Off/startup cleanup, simulated write/delete/policy failures, and cleanup guards.
 
@@ -50,6 +56,6 @@ The host receives text and can transmit it. Compromised OS/root and privileged o
 
 ## Deliverables and runtime gate
 
-Selected evidence includes iteration-0.1.2 host/adapter/build/APK-policy logs, signature/payload receipts, actual manifest/backup dumps, source publication receipt and unchanged-project proof. Source and report exports exclude keys, credentials, private baseline inventories, Library identifiers and build caches.
+Selected evidence includes iteration-0.1.3 host/adapter/build/APK-policy logs, signature/payload receipts, actual manifest/backup dumps, source publication receipt and unchanged-project proof. Source and report exports exclude keys, credentials, private baseline inventories, Library identifiers and build caches.
 
 See [LOCAL_LEARNING.md](LOCAL_LEARNING.md), [CONVERSION.md](CONVERSION.md), [SIGNING.md](SIGNING.md) and [DEVICE_TEST_PLAN.md](DEVICE_TEST_PLAN.md). The earlier [0.1.0/0.1.1 audit](SECURITY_AUDIT.md) is historical. This update has no independent Android runtime audit or daily-use readiness claim.
