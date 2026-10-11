@@ -49,8 +49,9 @@ public final class FeatureTests {
     private static final class Fixture {
         final Policy policy=new Policy(); final Storage storage=new Storage();
         final Queue worker=new Queue(),ui=new Queue(); long now=100*LearningData.DAY;
+        boolean privateMode;
         final LearningRepository repository=new LearningRepository(storage,policy);
-        final LearningCoordinator coordinator=new LearningCoordinator(repository,worker,ui,()->now);
+        final LearningCoordinator coordinator=new LearningCoordinator(repository,worker,ui,()->now,()->privateMode);
         void run() { worker.run(); ui.run(); }
         void enable(int d) { run(); yes(coordinator.configure(d)); run(); eq(d,coordinator.state().days); }
         boolean pick(String r,String w) { return coordinator.record(r,w,NORMAL,false,true,coordinator.state().generation); }
@@ -123,6 +124,46 @@ public final class FeatureTests {
             yes(f.coordinator.state().suggest("に",NORMAL,true,f.now).isEmpty());
             yes(f.coordinator.state().suggest("に",FieldPolicy.from(1,0x1000000),false,f.now).isEmpty());
             yes(f.coordinator.state().suggest("に",FieldPolicy.from(0x81,0),false,f.now).isEmpty());
+        });
+        test("settings privacy toggle returning to the same editor invalidates preview and old taps",()->{
+            List<String> choices=new ArrayList<>(); Editor e=new Editor(); InputSession s=session(e,choices,1,0);
+            boolean[] setting={false}; s.type("にほん"); s.preview("日本",s.revision()); long old=s.revision();
+            setting[0]=true; yes(s.syncIncognito(()->setting[0])); yes(s.incognito()); eq("",s.preview());
+            eq("にほん",e.composing); no(s.select("日本",old)); s.select("日本",s.revision()); yes(choices.isEmpty());
+            setting[0]=false; yes(s.syncIncognito(()->setting[0])); no(s.incognito());
+            s.type("とうきょう"); s.select("東京",s.revision()); eq(1,choices.size());
+        });
+        test("privacy preference read failures fail closed and host restoration failures are reported",()->{
+            List<String> choices=new ArrayList<>(); Editor e=new Editor(); InputSession s=session(e,choices,1,0);
+            s.type("にほん"); s.preview("日本",s.revision()); e.accepting=false;
+            no(s.syncIncognito(()->{ throw new IllegalStateException("Synthetic preference failure"); }));
+            yes(s.incognito()); eq("日本",s.preview()); s.enter(); yes(choices.isEmpty());
+            e.accepting=true; yes(s.cancelPreview()); eq("にほん",e.composing);
+        });
+        test("current privacy gates retained learned snapshots and recording before listeners run",()->{
+            Fixture f=new Fixture(); f.enable(7); f.pick("にほん","日本"); f.run();
+            LearningCoordinator.State old=f.coordinator.state(); f.privateMode=true;
+            yes(old.suggest("に",NORMAL,false,f.now).isEmpty()); no(f.pick("とうきょう","東京"));
+            eq(0,f.coordinator.pendingCount());
+        });
+        test("privacy transitions discard queued choices and never revive them when switched off",()->{
+            Fixture f=new Fixture(); f.enable(7); f.pick("にほん","日本"); f.run(); int writes=f.storage.writes;
+            LearningCoordinator.State stale=f.coordinator.state(); yes(f.pick("とうきょう","東京"));
+            f.privateMode=true; f.coordinator.privateModeChanged(); eq(0,f.coordinator.pendingCount());
+            yes(f.suggest("に").isEmpty()); f.privateMode=false; f.coordinator.privateModeChanged(); f.run();
+            eq(writes,f.storage.writes); eq(1,f.coordinator.state().entries.size());
+            no(f.coordinator.record("とうきょう","東京",NORMAL,false,true,stale.generation));
+            yes(f.pick("とうきょう","東京")); f.run(); eq(2,f.coordinator.state().entries.size());
+        });
+        test("queued worker independently rechecks current privacy without a delivered callback",()->{
+            Fixture f=new Fixture(); f.enable(7); yes(f.pick("にほん","日本")); f.privateMode=true; f.run();
+            eq(0,f.storage.writes); eq(0,f.coordinator.state().entries.size());
+        });
+        test("privacy changes before persistence restore the previous bounded memory snapshot",()->{
+            Fixture f=new Fixture(); f.enable(7); f.pick("にほん","日本"); f.run(); int writes=f.storage.writes;
+            int[] calls={0}; f.repository.record(Collections.singletonList(new LearningData.Entry("とうきょう","東京",f.now)),
+                    f.now,()->++calls[0]==1);
+            eq(2,calls[0]); eq(writes,f.storage.writes); eq(1,f.repository.entries().size());
         });
         test("prefix prediction retains the complete original reading",()->{
             Fixture f=new Fixture(); f.enable(7); f.pick("にほん","日本"); f.run();

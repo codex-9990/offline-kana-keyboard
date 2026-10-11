@@ -36,7 +36,16 @@ public final class InputSession {
     public boolean shifted() { return shifted; }
     public boolean incognito() { return incognito; }
     public void choices(ChoiceListener listener) { choices=listener; }
-    public void incognito(boolean value) { if (incognito!=value) { incognito=value; cancelPreview(); revision++; } }
+    public boolean incognito(boolean value) {
+        if (incognito==value) return true;
+        incognito=value; boolean restored=cancelPreview(); revision++; return restored;
+    }
+    /** Re-read current settings even when Android returns to the same active editor. */
+    public boolean syncIncognito(java.util.function.BooleanSupplier currentSetting) {
+        boolean value;
+        try { value=currentSetting.getAsBoolean(); } catch (RuntimeException ignored) { value=true; }
+        return incognito(value);
+    }
     public boolean hasCandidates() { return policy.candidates && mode == Mode.KANA && !composing.isEmpty(); }
     public void shift() { shifted = !shifted; revision++; }
     public void mode(Mode next) {

@@ -13,7 +13,11 @@ import java.util.concurrent.Executors;
 /** One application-scoped worker; no Activity context, input log or external path. */
 public final class LearningStore {
     private static LearningCoordinator instance;
+    private static SharedPreferences.OnSharedPreferenceChangeListener privacyListener;
     private LearningStore() {}
+    public static boolean privateMode(SharedPreferences prefs) {
+        try { return prefs.getBoolean("incognito",false); } catch (RuntimeException ignored) { return true; }
+    }
     public static synchronized LearningCoordinator get(Context context) {
         if (instance==null) {
             Context app=context.getApplicationContext();
@@ -29,7 +33,9 @@ public final class LearningStore {
                     new LearningFileStorage(()->app.getNoBackupFilesDir().toPath()),policy);
             Handler main=new Handler(Looper.getMainLooper());
             instance=new LearningCoordinator(repository,Executors.newSingleThreadExecutor(),
-                    task->main.post(task),System::currentTimeMillis);
+                    task->main.post(task),System::currentTimeMillis,()->privateMode(prefs));
+            privacyListener=(settings,key)-> { if ("incognito".equals(key)) instance.privateModeChanged(); };
+            prefs.registerOnSharedPreferenceChangeListener(privacyListener);
         }
         return instance;
     }

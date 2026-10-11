@@ -4,6 +4,7 @@ package dev.local.koto.core;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 
 /** Blocking operations are owned exclusively by the coordinator's worker. */
 public final class LearningRepository {
@@ -61,12 +62,17 @@ public final class LearningRepository {
         } catch (IOException | RuntimeException ignored) { failClosed(); return false; }
     }
     public void record(List<LearningData.Entry> values,long now) {
-        if (days()==0) return;
-        boolean changed=data.prune(days,now);
+        record(values,now,()->true);
+    }
+    public void record(List<LearningData.Entry> values,long now,BooleanSupplier allowed) {
+        if (days()==0 || !allowed.getAsBoolean()) return;
         try {
+            byte[] previous=data.encode();
+            boolean changed=data.prune(days,now);
             for (LearningData.Entry e:values) if (LearningData.alive(e,days,now)) {
                 data.record(e); changed=true;
             }
+            if (!allowed.getAsBoolean()) { data.decode(previous); return; }
             if (changed) persist();
         } catch (IOException | RuntimeException ignored) { failClosed(); }
     }
