@@ -41,41 +41,60 @@ public final class EditorSelection {
     }
     public void finish() { active=false; missing=false; spanStart=spanEnd=-1; length=0; }
     public boolean hasSelection() { return start>=0 && end>=0 && start!=end; }
-    public boolean recoverRegion() { return active && missing && spanStart>=0 && spanEnd>=spanStart; }
-    public boolean unknownMissingRegion() { return active && missing && spanStart<0; }
+    public boolean recoverRegion() {
+        // A successful request is not proof that the host retained its composing span.
+        return active && (missing || !expected.isEmpty()) && spanStart>=0 && spanEnd>=spanStart;
+    }
+    public boolean unknownMissingRegion() { return active && (missing || !expected.isEmpty()) && spanStart<0; }
     public int spanStart() { return spanStart; }
     public int spanEnd() { return spanEnd; }
     public int pendingMetadataCount() { return expected.size(); }
+    private void acknowledge(Write write) {
+        // Consume the ordered prefix, including updates coalesced into this acknowledgement.
+        while (!expected.isEmpty()) if (expected.remove()==write) break;
+    }
     /** Returns true only for an unaccounted-for actual cursor/selection move. */
     public boolean update(int oldStart,int oldEnd,int newStart,int newEnd,int candidatesStart,int candidatesEnd) {
         if (newStart<0 || newEnd<0) return false; // Absence of metadata is not evidence of a cursor move.
         boolean range=candidatesStart>=0 && candidatesEnd>=candidatesStart;
-        boolean self=false,earlierOld=false;
+        boolean current=newStart==start && newEnd==end;
+        Write acknowledged=null;
+        boolean earlierOld=false;
         for (Write write:expected) {
             earlierOld|=oldStart==write.oldStart && oldEnd==write.oldEnd;
             if (newStart==newEnd && newStart==write.newPosition
-                    && (earlierOld || oldStart==reportedStart && oldEnd==reportedEnd)
-                    && (!range || candidatesStart==write.spanStart && candidatesEnd==write.spanEnd)) self=true;
+                    && (current || earlierOld || oldStart==reportedStart && oldEnd==reportedEnd)
+                    && (!range || candidatesStart==write.spanStart && candidatesEnd==write.spanEnd)) {
+                // The earliest matching operation may share a cursor with a later
+                // preview/cancel operation. Do not acknowledge that later write early.
+                if (acknowledged==null) acknowledged=write;
+            }
         }
-        boolean current=newStart==start && newEnd==end;
-        if (current && active && range && !self && (candidatesStart!=spanStart || candidatesEnd!=spanEnd)) {
+        if (current && active && range && acknowledged==null && (candidatesStart!=spanStart || candidatesEnd!=spanEnd)) {
             select(newStart,newEnd); return true;
         }
-        if (self || current) {
+        if (acknowledged!=null || current) {
+            if (acknowledged!=null) acknowledge(acknowledged);
             reportedStart=newStart; reportedEnd=newEnd;
             // A delayed acknowledgement must not replace our latest predicted cursor/span.
             if (current && active) missing=!range || candidatesStart!=spanStart || candidatesEnd!=spanEnd;
             return false;
         }
+        // finishComposingText can report a duplicate at the last acknowledged cursor
+        // while a newer word is pending. No actual move occurred; do not revive an old write.
+        if (!range && newStart==oldStart && newEnd==oldEnd
+                && newStart==reportedStart && newEnd==reportedEnd) return false;
         if (active && spanStart<0 && newStart==newEnd) {
             if (range && candidatesEnd==newStart && candidatesEnd-candidatesStart==length) {
                 spanStart=candidatesStart; spanEnd=candidatesEnd; start=end=newStart; missing=false;
+                expected.clear();
                 reportedStart=newStart; reportedEnd=newEnd; return false;
             }
             // One acknowledged write can establish the anchor from supplied old/new selection.
             int first=oldStart>=0 && oldEnd>=0 ? Math.min(oldStart,oldEnd) : -1;
             if (!range && expected.size()==1 && first>=0 && (long)first+length==newStart) {
                 spanStart=first; spanEnd=newStart; start=end=newStart; missing=true;
+                expected.clear();
                 reportedStart=newStart; reportedEnd=newEnd; return false;
             }
             // Never guess a replacement range when callbacks provide no trustworthy anchor.

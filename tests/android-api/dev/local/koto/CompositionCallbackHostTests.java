@@ -18,8 +18,12 @@ import java.util.List;
 /** Replaces composing spans in a visible buffer and delivers realistic queued selection callbacks. */
 public final class CompositionCallbackHostTests {
     private static int count;
+    private static String filter="";
     private interface Test { void run() throws Exception; }
-    private static void test(String name,Test body) throws Exception { body.run(); count++; System.out.println("PASS: "+name); }
+    private static void test(String name,Test body) throws Exception {
+        if (!filter.isEmpty() && !name.contains(filter)) return;
+        body.run(); count++; System.out.println("PASS: "+name);
+    }
     private static void eq(Object expected,Object actual) { if (!expected.equals(actual)) throw new AssertionError("Expected "+expected+"; got "+actual); }
     private static void yes(boolean b) { if (!b) throw new AssertionError("Expected true"); }
     private static final class Host {
@@ -88,6 +92,7 @@ public final class CompositionCallbackHostTests {
         }
     }
     public static void main(String[] args) throws Exception {
+        filter=args.length>1 ? args[1] : "";
         final SkkDictionary dictionary=SkkDictionary.load(new FileInputStream(args[0]));
         test("sequential kana survives omitted composing-range callbacks and converts as one word",()->{
             Host h=new Host(1,0); h.omitRange=true;
@@ -199,6 +204,64 @@ public final class CompositionCallbackHostTests {
         test("conflicting positive composing ranges end local state instead of overwriting unrelated spans",()->{
             Host h=new Host(1,0); h.session.type("にほん"); h.flush();
             h.updates.add(new int[]{3,3,3,3,1,3}); h.flush(); eq("",h.session.text()); eq("にほん",h.text); eq(0,h.regions);
+        });
+        test("incremental cursor move to an acknowledged old position ends composition",()->{
+            Host h=new Host(1,0); h.omitRange=true;
+            h.kana(4,1); h.flush(); h.kana(5,4); h.flush(); h.kana(10,2); h.flush();
+            h.cursor=h.selectionEnd=1; h.updates.add(new int[]{3,3,1,1,-1,-1}); h.flush();
+            eq("",h.session.text()); eq("にほん",h.text);
+            h.session.type("あ"); h.flush(); eq("にあほん",h.text); eq("あ",h.session.text());
+        });
+        test("stripped spans with delayed callbacks do not append accumulated readings",()->{
+            Host h=new Host(1,0); h.omitRange=true; h.stripSpan=true;
+            h.kana(4,1); h.kana(5,4); h.kana(10,2); eq("にほん",h.text); h.flush();
+            eq("にほん",h.session.text()); yes(h.session.select("日本",h.session.revision())); h.flush(); eq("日本",h.text);
+        });
+        test("incremental cursor targets preserve prefix text across reported and omitted spans",()->{
+            for (boolean omit:new boolean[]{false,true}) for (int position:new int[]{0,1,2}) {
+                Host h=new Host(1,EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING,"prefix:",false); h.omitRange=omit;
+                h.kana(4,1); h.flush(); h.kana(5,4); h.flush(); h.kana(10,2); h.flush();
+                int next=7+position; h.cursor=h.selectionEnd=next;
+                h.updates.add(new int[]{10,10,next,next,omit ? -1 : 7,omit ? -1 : 10}); h.flush();
+                eq("",h.session.text()); h.session.type("あ"); h.flush();
+                eq("prefix:"+"にほん".substring(0,position)+"あ"+"にほん".substring(position),h.text); yes(h.learned.isEmpty());
+            }
+        });
+        test("stripped delayed bursts preserve prefix with restoration callbacks and coalescing",()->{
+            for (boolean regionCallbacks:new boolean[]{false,true}) for (boolean coalesce:new boolean[]{false,true}) {
+                Host h=new Host(1,0,"prefix:",false); h.omitRange=true; h.stripSpan=true; h.regionUpdates=regionCallbacks;
+                h.kana(4,1); h.kana(5,4); h.kana(10,2); eq("prefix:にほん",h.text);
+                if (coalesce) { h.updates.clear(); h.updates.add(new int[]{7,7,10,10,-1,-1}); }
+                h.flush(); eq("にほん",h.session.text()); eq(0,h.finishes); eq(0,h.batches);
+                h.session.preview("日本",h.session.revision()); h.session.cancelPreview(); h.flush();
+                eq("prefix:にほん",h.text); yes(h.session.select("日本",h.session.revision())); h.flush(); eq("prefix:日本",h.text);
+            }
+        });
+        test("acknowledged metadata is consumed while outstanding delayed writes remain eligible",()->{
+            EditorSelection s=new EditorSelection(0,0); s.expect(1,true); s.expect(2,true); s.expect(3,true);
+            yes(!s.update(0,0,1,1,-1,-1)); eq(2,s.pendingMetadataCount());
+            yes(!s.update(1,1,2,2,-1,-1)); eq(1,s.pendingMetadataCount());
+            yes(!s.update(2,2,3,3,-1,-1)); eq(0,s.pendingMetadataCount());
+            yes(s.update(3,3,1,1,-1,-1)); yes(!s.recoverRegion());
+            s=new EditorSelection(0,0); s.expect(1,true); s.expect(2,true); s.expect(3,true);
+            yes(!s.update(0,0,3,3,-1,-1)); eq(0,s.pendingMetadataCount()); yes(s.update(3,3,2,2,-1,-1));
+        });
+        test("unknown unacknowledged anchors stop before duplicating an accumulated reading",()->{
+            Host h=new Host(1,0,"prefix:",true); h.omitRange=true; h.stripSpan=true;
+            h.kana(4,1); h.kana(5,4); eq("prefix:に",h.text); eq("に",h.session.text()); yes(h.editor.compositionRejected());
+            h.flush(); h.kana(5,4); h.flush(); eq("prefix:にほ",h.text);
+        });
+        test("cursor and selection after delayed stripped-span burst start fresh at actual location",()->{
+            for (boolean selection:new boolean[]{false,true}) {
+                Host h=new Host(1,0); h.omitRange=true; h.stripSpan=true;
+                h.kana(4,1); h.kana(5,4); h.kana(10,2); h.flush();
+                h.cursor=1; h.selectionEnd=selection ? 2 : 1; h.updates.add(new int[]{3,3,h.cursor,h.selectionEnd,-1,-1}); h.flush();
+                eq("",h.session.text()); h.session.type("あ"); h.flush(); eq(selection ? "にあん" : "にあほん",h.text);
+            }
+        });
+        test("current-coordinate callbacks retire queued writes even without old-coordinate progression",()->{
+            EditorSelection s=new EditorSelection(0,0); s.expect(1,true); s.expect(2,true); s.expect(3,true);
+            yes(!s.update(3,3,3,3,-1,-1)); eq(0,s.pendingMetadataCount()); yes(s.update(3,3,1,1,-1,-1));
         });
         System.out.println("PASS: "+count+" composition-callback host groups; Android runtime reproduction NOT RUN");
     }

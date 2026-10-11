@@ -35,6 +35,9 @@ public final class ConnectionEditorHostTests {
                     if (name.equals("setComposingText")) {
                         if (accept) composition = args[0].toString(); return accept;
                     }
+                    // This port fixture supports region recovery; callback/span behavior is
+                    // exercised separately against the full visible-buffer fixture.
+                    if (name.equals("setComposingRegion")) return accept;
                     if (name.equals("commitText")) {
                         if (accept) {
                             text = text.substring(0,Math.min(start,end)) + args[0] + text.substring(Math.max(start,end));
