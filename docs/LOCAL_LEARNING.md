@@ -8,7 +8,7 @@ Settings changes notify the active IME and invalidate previews/callbacks. The pr
 
 Only a successful candidate tap or an explicitly confirmed preview (確定/Enter) is eligible, and only when the complete reading/word is an exact choice in the bundled dictionary. Records are the reading, selected word and last explicit-selection timestamp. Up to eight exact/prefix remembered candidates precede ordinary dictionary candidates. Prefix choices keep their complete original reading. Previewing, reading, raw kana fallback, typing/moving/switching, cancellation, okurigana-derived words and generated phrases do not create records. Ordinary input has no implicit commit. Space appends locally and does not confirm.
 
-Password variants, NO_PERSONALIZED_LEARNING, NO_SUGGESTIONS, numeric/phone/date, forced-ASCII, email/URI, person-name/postal-address and private mode disallow recording and remembered lookup. Normal editor flags do not reveal semantic sensitivity. Leave learning off or use private mode for secrets in an ordinary field.
+Password variants, NO_PERSONALIZED_LEARNING, NO_SUGGESTIONS, numeric/phone/date, forced-ASCII, email/URI, person-name/postal-address and private mode disallow recording and remembered lookup. Normal editor flags do not reveal semantic sensitivity. Leave learning off or use private mode for secrets in an ordinary field. NO_SUGGESTIONS remains independently ineligible when explicit fixed conversion is enabled;CandidateList never invokes the history supplier. Field-start/count maintenance is gated too. Retained enabled data may initialize/clean up at app startup independently of field text;manual conversion does not query or record it.
 
 ## Retention and deletion
 

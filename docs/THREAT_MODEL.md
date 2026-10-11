@@ -1,8 +1,8 @@
-# Threat model — 0.1.6
+# Threat model — 0.1.7
 
 ## Goal and scope
 
-Koto performs kana input, dictionary lookup and bounded heuristic phrase proposals locally. Ordinary input flows gesture → keyboard RAM/local draft → explicit confirmation → Android InputConnection → host editor. Password, numeric and NO_SUGGESTIONS fields use direct key commits. Optional learning retains only eligible explicit dictionary-exact reading/word/last-selection records. There is no conversion download or cloud request.
+Koto performs kana input, dictionary lookup and bounded heuristic phrase proposals locally. Ordinary input flows gesture → keyboard RAM/local draft → explicit confirmation → Android InputConnection → host editor. Password, number/phone/datetime and null/unknown types use direct key commits. Recognized text with NO_SUGGESTIONS allows local editing and fixed-dictionary conversion only after an explicit request;unsolicited/segmented candidates and learned lookup/recording stay disabled. URI/email/FORCE_ASCII retain English default/ASCII access and the same manual conversion policy. Optional learning retains only eligible explicit dictionary-exact reading/word/last-selection records. There is no conversion download or cloud request.
 
 This development trial's source/artifact checks establish a bounded application privacy design, not an absolute guarantee on a compromised device. Airplane-mode functionality alone would not establish no-egress. Native Android/S24 validation remains NOT RUN.
 
@@ -22,6 +22,7 @@ Possible observers include network SDKs, malicious IME binders, backup/transfer 
 | Preedit ownership | Local bounded RAM; no setComposingText/Region, inferred selection or surrounding reads; explicit commit first finishes any host-owned style | Source/API fixture/DEX; native host compatibility untested |
 | Password fields | All supported password variations: direct commits, no local draft/preview/candidate display or learning | Policy/core/API fixture; native editors untested |
 | Local learning | Default off; exact lexical explicit choices only;128 entries/32KiB; one fixed data/temp pair under no-backup storage | Host core/race/failure and real Linux file tests; Android app UID/storage untested |
+| Explicit conversion | CandidateList gates before history/dictionary queries;NO_SUGGESTIONS no-learning gate is independent;delayed work cannot open a list | Production core/API/negative-source checks;actual browser flags unknown |
 | Field/private policy | Password/restricted/NO_PERSON flags/sensitive types/manual private mode block remembered lookup and learning; independent live gates on worker/snapshots | Host tests; sensitivity of ordinary editor text cannot be inferred |
 | Backup/transfer | allowBackup=false; all nine legacy/cloud/transfer domains excluded; learning uses getNoBackupFilesDir | Actual compiled XML/manifest; OEM transfer NOT RUN |
 | Logs | No runtime log sites or text-bearing error/upload path | Source/DEX; runtime logcat NOT RUN |
@@ -38,6 +39,6 @@ The host receives explicitly confirmed ordinary text and direct restricted/passw
 
 A compromised OS can disregard permissions/backup flags, inspect memory or transfer data. Java/Binder strings and old references cannot be reliably wiped. Clearing files/references is not physical secure erasure. Plaintext learned pairs stay inside the app UID boundary; root/OS compromise can access them. Stopped-app expiry is enforced at the next lookup/use, not exact-time disk deletion. Failed policy persistence cannot establish durable controls and is reported. Clear does not remove static words or text already delivered to the host.
 
-All six earlier APKs are retained unchanged. Known composition regressions make 0.1.3–0.1.5 unsuitable for daily typing; signing success did not establish correct editing. The 0.1.6 trial is held pending independent review and native QA. No physical device or new SDK agreement/key was touched and no public APK release occurred.
+All seven earlier APKs are retained unchanged. Known composition regressions make 0.1.3–0.1.5 unsuitable for daily typing; signing success did not establish correct editing. The corrected0.1.6 was previously delivered as a limited trial;0.1.7 is held for independent review and native QA. No physical device or new SDK agreement/key was touched and no public APK release occurred.
 
 Any future Mozc/native engine or learning expansion requires complete dependency/license/persistence/outward-path review and fresh packaged audits. Clipboard history must remain opt-in if ever introduced. No cloud recognizer or client may arrive implicitly. [Local learning](LOCAL_LEARNING.md), [composition tradeoffs](COMPOSITION.md) and [verification](VERIFICATION.md) describe current scope.

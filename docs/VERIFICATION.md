@@ -1,65 +1,58 @@
-# Verification report — 0.1.6 development trial
+# Verification — 0.1.7 development trial
 
-Application source: **a91012fa2d5b300c87032835d16fa41b6cf9b930**. APK SHA-256 **5bb7e8dcde0a9cb6f275bd6e97f6fe896b1aa6d63fadec1e124ac40f74c0910a**, **512,678 bytes**, version code **7**. Signed with the existing approved certificate, debuggable=false. **Android emulator, Galaxy S24, the reporting app and conventional Gradle/lint remain NOT RUN.** No device action, new SDK agreement/key or public APK release occurred. Replacement delivery remains held pending independent review.
+Application **3cd0f7dd1f04f5e2e985f909d0f520695b25f074**;version0.1.7/code8. Signed APK **512,678 bytes**, SHA256 **df40f0691e3d975f80b603e457fdb7cceecd43b12983f0737ca7d31ac1824e03**, approved existing certificate, not debuggable. **Independent-review hold: no0.1.7 Library replacement.** No SDK install/agreement/new key/device action/public APK release.
 
 ## Exact results
 
 | Check | Result | Scope |
 |---|---|---|
-| Production core | PASS — 36 groups | Flick mappings, local preedit/preview, Unicode deletion, explicit confirmation, modes, capacity, restricted/password policies and actions |
-| Feature regressions | PASS — 45 groups | Retention/quotas/queue bounds, live private-mode gates, failures/races, real Linux host files, layouts/sensitivity and heuristic phrase proposals |
-| ConnectionEditor API adapter | PASS — 14 groups | Actual Android API signatures, synthetic InputConnection, injected native-key model; no native event loop |
-| Local-preedit editor | PASS — 23 groups | Separate host text/caret and local oracle; callbacks, flick/dictionary choice, delete/cancel/modes, focus/relayout, privacy, failure/retry |
-| Bounded sequences | PASS — 59,048 cases | Every length-0–4 string over nine operations, eight host/range/flush options; exact draft/preview/text/commit counts and accepted continuing key; no lockout accepted |
-| Continuous conversion | PASS — 1,000 cycles | 4,000 accepted keys, 2,000 expected confirmations; delayed/coalesced updates; complete expected host text |
-| 0.1.5 loss/lockout reproduction | EXPECTED FAIL — retained | にほん → 日本 → accepted ご before callbacks → flush loses ご on c186fb4; separately captured and not counted as final success |
-| Older historical reproductions | EXPECTED FAIL — retained | Original missing-bound first-kana loss; 0.1.3 stale cursor and stripped-span duplication; 0.1.4 coalesced preview/cancel |
-| Preedit projection regression | PASS — 3 groups, included in45 feature groups | Expired after relayout; clear/Off before/after worker; valid/restricted echo policy; projected text/accessibility matches exact next confirmation |
-| Source/DEX help instruction guards | PASS — 4 each, included in22/24 totals | Actual settings constants and compiled strings require local/explicit/space/mode/cursor/hide/focus/privacy guidance and reject retired claims |
-| Instruction negative cases | PASS — 32 mutations | Missing behavior/section, duplicate section and retired statements are rejected |
-| Prior held0.1.6help artifact | EXPECTED FAIL — archived source/APK rejected | All four old-source topics fail; actual old signed APK fails new help guard; signature itself is not being alleged invalid |
-| Source policy | PASS — 22 checks | Zero permissions, no logs/network/surrounding reads, local preedit/no span reclamation, bounded no-backup learning, exports/intents/dependencies |
-| Initial 0.1.6 build | FAIL — corrected | New DEX guard caught deleted EditorSelection.class left in generated output; builder cleanup added; failed log retained |
-| Clean API compilation/resources/DEX | PASS | Existing pinned AOSP API 35 jar, AAPT2/D8; no SDK install/agreements |
-| Signed APK policy/content | PASS — 24 checks | Actual binary manifest version7/0.1.6, zero permissions, exports, debuggable=false, backup XML, dictionary/assets, DEX namespace/no composing machinery and alignment |
-| Signature/certificate | PASS | apksig 8.7.3; v2/v3 API 26–35; one expected signer; zero errors/warnings |
-| Signed/unsigned payload | PASS — all 10 ZIP entries | Byte-identical application payloads and ZIP CRC checks |
-| Tamper rejection | PASS | Same four-argument verifier accepts valid control and rejects altered DEX with one signature error; temporary copies removed |
-| Earlier APK preservation | PASS | Six prior signed APKs 0.1.0–0.1.5 unchanged |
-| Unrelated project preservation | PASS | 175 tracked hashes unchanged; clean Git status |
-| Conventional Gradle build/lint/merged manifest | NOT RUN | SDK absent; alternative build's actual packaged manifest inspected |
-| Android installation/IME registration/Binder/Looper | NOT RUN | No SDK/adb/emulator/KVM; no physical-device authorization |
-| Native DEL/cursor, graphemes/WebView, actions | NOT RUN | Actual API signatures compiled; injected host key model only |
-| Android views/touch/layout/rotation/lifecycle | NOT RUN | Host session/gesture models pass; native framework and One UI not observed |
-| Android storage/backup/device transfer/logs | NOT RUN | Source/artifact controls and real Linux file tests; Android/OEM behavior not observed |
-| S24 latency/insets/haptics/airplane mode | NOT RUN | No native runtime claims or measurements |
-| Reporting app / user's failure | NOT RUN | App/field/EditorInfo flags unknown; user-visible resolution not established |
+| Core | PASS —42 groups | Flick/input/field/action/capacity/lifecycle;NO_SUGGESTIONS with/without NO_PERSON, body/web/URI/email/FORCE_ASCII combinations, restricted types |
+| Features | PASS —51 groups | Existing learning/race/failure/storage/layout/phrase/projection plus explicit-only dictionary/history-supplier/notification/delayed-work regressions |
+| ConnectionEditor API adapter | PASS —14 groups | Actual API signatures, synthetic InputConnection, injected native keys |
+| Local preedit API fixture | PASS —29 groups | Independent host text/caret and local draft/request/preview oracle; focus/relayout/rejected commits/continued typing |
+| Ordinary bounded sequences | PASS —59,048 cases | Depth0–4, nine operations, eight span/range/flush options; exact host/draft/preview/counts and further accepted key |
+| Explicit-only bounded sequences | PASS —177,776 cases | Depth0–4, ten operations including request; eight options, NO_PERSON both states; exact request state/no learned records |
+| Continuous ordinary conversion | PASS —1,000 cycles |4,000 accepted keys/2,000 exact confirmations; delayed/coalesced updates |
+| Continuous explicit-only conversion | PASS —2,000 cycles |8,000 accepted keys/4,000 exact confirmations; NO_PERSON both states/no learned records |
+| Actual in-app help | PASS —5 source/DEX guards | Local confirmation/privacy/learning/manual policy/retired claims; included in source/APK totals |
+| Help negative controls | PASS —45 mutations | Missing behavior/section, duplicates, retired claims |
+| Compatibility negative controls | PASS —6 mutations | Independent no-learning gate, restricted types, first-press ordering, lazy history, phrase callback and static tap generation |
+| Source policy | PASS —29 checks | Permissions/log/network/surrounding reads, exports/intents/dependencies, local preedit, no-backup learning, explicit gates |
+| Cached AOSP compile/resources/DEX | PASS | Pinned API35/AAPT2/D8, clean generated output; no fetch or SDK installation |
+| Actual signed APK | PASS —26 checks | Binary manifest/version/permissions/exports/debug/backup, help/guidance/DEX/assets/namespace/alignment |
+| Signature | PASS | apksig8.7.3;v2/v3 API26–35;one expected certificate;zero errors/warnings |
+| Payload | PASS —10 entries | Signed/unsigned bytes identical;both ZIP CRC checks pass |
+| Actual DEX tamper | PASS | Same four-argument verifier accepts control and rejects altered DEX with1 signature error;signature block retained;temporary copy removed |
+| Prior0.1.6 NO_SUGGESTIONS requirement | EXPECTED FAIL | Exact a91012f source compiled;acceptedにほん directly committed/empty local draft;synthetic policy reproduction |
+| First0.1.7 adapter run | FAIL — corrected test expectation | Expected4 successful commits although one was rejected;correct3;no app change required;complete rerun passes |
+| Historical defects | EXPECTED FAIL — retained | Missing first kana;0.1.3 cursor/duplication;0.1.4 coalesced cancel;0.1.5 acceptedご loss/lockout |
+| Historical0.1.6 build/help defects | FAIL/EXPECTED FAIL — previously corrected | Deleted compiled class and old help/projection;retained traces;current clean build and projection regressions pass |
+| Prior artifacts | PASS | Seven prior APK hashes and held pre-help0.1.6 archive unchanged |
+| Protected project | PASS |175 tracked gpd-control-android SHA256 values unchanged;git clean |
+| Gradle/lint/conventional merged manifest | NOT RUN | SDK absent;alternative packaged binary manifest inspected |
+| Install/registration/IME/Binder/Looper/native events | NOT RUN | No SDK/adb/emulator/KVM;no physical-device operation |
+| Android views/touch/accessibility/insets/rotation/lifecycle | NOT RUN | Compiled source/pure models;native framework/One UI unobserved |
+| Native DEL/cursor/graphemes/WebView/actions | NOT RUN | API compile/injected key model only |
+| Android storage/backup/transfer/logcat/network capture | NOT RUN | Source/artifact controls and Linux file tests only |
+| S24 latency/haptics/airplane mode | NOT RUN | No native measurements |
+| Affected browser/reported resolution | NOT RUN | URL/search and page fail while browser notepad works;browser/flags/returns unknown |
+|0.1.7 Library delivery/download-back | NOT RUN — held | Review required before replacements;prior0.1.6 items untouched |
 
-## Interpreting the evidence
+The236,824 sequences and3,000 cycles are cases inside groups, not extra group counts. Every accepted input must appear once according to explicit editing and confirmation; ignored keys/lockout fail. The oracle is bounded/synthetic, not all Android schedules, hostile hosts or a security audit. Service callback policy is compiled, statically guarded and tested through production CandidateList/PhraseRequests; native service/View dispatch is unexecuted.
 
-Review found that the 0.1.5 safety fence could lose an accepted next key during ordinary Japanese typing and halt further kana. That is release-blocking. The current version deletes span/cursor ownership tracking and holds ordinary reading/preview locally until explicit confirmation. No callback can discard, send or permanently fence the draft. Unsupported confirmation operations retain an editable draft; failure handling is not counted as successful conversion in those hosts.
+Tests use the real licensed dictionary and pre-existing synthetic records. History suppliers throw if invoked in manual/restricted/private policies; record APIs reject those choices without file writes. No unsolicited candidates before explicit request, after reading edits or field changes; loading/learning notifications and old segmented results cannot open them. URI/email/FORCE_ASCII keep English defaults/ASCII entry, and rejected Unicode keeps the editable draft. This addresses a plausible policy cause without proving the user's actual flags.
 
-The updated tests require each accepted key exactly once according to explicit edits, exact host text and commit counts, continuous repeated conversion and subsequent accepted input. The 59,048 sequence cases are one test group, not 59,048 separate test groups. The 1,000 continuous cycles are likewise one group. Core/feature groups were updated for local-preedit semantics rather than being claimed unchanged. The model is bounded and synthetic, not arbitrary Binder scheduling, all host mutations or a security audit against a hostile editor.
+## Packet evidence
 
-Normal English/symbol text also stays local until 確定. Space appends rather than confirms. Hide/fresh focus discards unconfirmed input; relayout preserves it only within the same active session, and framework hide/restart on rotation can discard it. These deliberate UX limits and the lack of native deletion/rotation/S24 evidence remain material. The keyboard uses a licensed real dictionary and bounded heuristic phrases, not full Mozc conversion.
+The public verification ZIP includes docs/notices and exact scoped evidence, excluding credentials, Library identities and workspace-wide inventories:
 
-## Review correction scope
+- iteration-0.1.7-host-tests.txt, adapter-tests.txt and adapter-tests-first-run.txt: final checks and corrected test failure.
+- iteration-0.1.7-before-fix.txt: prior source compiled and failed the editable NO_SUGGESTIONS requirement.
+- iteration-0.1.7-aosp-build.txt, signed-apk-policy.txt, signature.json, signature-control.txt, payload.json and tamper.json.
+- Actual0.1.7 apk-manifest.xml/txt, apk-badging.txt, compiled backup rules and dex-strings.txt.
+- iteration-0.1.7-diagnosis.json, protected-project.json, publication-manifest.json and source-export.json: scope/preservation/exact public tree/ZIP bytes and line-ending normalization.
+- Historical scoped before-fix/build/help failure traces where cited, with their original version labels.
 
-The first held0.1.6 packet had stale in-app instructions and rendered preedit before invalidating an expired/cleared learned preview. Current help describes the implemented local/explicit workflow, including hide/fresh-focus cancellation; source and packaged-string guards prevent the reviewed instructions from returning. Current rendering takes one immutable projection after cancellation, shared by visible/accessibility text, and retains active preview provenance across relayout. Three production core/coordinator projection groups pass; native Android TextView/accessibility remains NOT RUN.
+Unsigned SHA256 **5d71ce71c933bfa520c80a1d0ce7a1444758c40cf470487a43df27a9ffef08ff** (507,202bytes). Certificate SHA256 **54d17f7d3afe53d1c06c74984aa976150b7336f1843ac0869fa28876856b84fe**. Source ZIP covers the clean tracked tree;APK binds to the application commit. Documentation/publication commit is recorded in the packet receipt. Local SHA256/CRC prove prepared bytes, not cloud download-back.
 
-Four old held artifacts are preserved with their original hashes in a local archive. Current version/code remains0.1.6/7 because it has not been delivered or installed; source/APK hashes distinguish the correction. The historical initial stale-class build failure predates this help correction. No Library replacement was attempted.
-
-## Evidence files
-
-- iteration-0.1.6-host-tests.txt: 36 core +45 feature groups and22 source checks, including the three projection regressions.
-- iteration-0.1.6-help-guards.txt and help-before-review.txt: prior-source/actual-APK rejection plus32negative instruction mutations.
-- iteration-0.1.6-review-corrections.json: current correction scope and archived-artifact preservation.
-- iteration-0.1.6-adapter-tests.txt: 14 adapter +23 local-preedit groups,59,048 cases and1,000 conversion cycles.
-- iteration-0.1.6-lockout-before-fix.txt: expected failure on0.1.5.
-- iteration-0.1.6-initial-build.txt: failed stale-output guard; iteration-0.1.6-aosp-build.txt: final clean build.
-- iteration-0.1.6-apk-policy.txt, signature.json and payload-check.json: actual signed artifact evidence.
-- iteration-0.1.6-publication.json and publication-manifest.json: complete approved remote tree comparison; no APK release.
-- iteration-0.1.6-protected-project.json: baseline and older-APK preservation proof without unrelated source inventory.
-- apk-manifest.xml/badging.txt and backup resource dumps: actual final packaged manifest/resources.
-
-The review archive allowlists public docs and these synthetic/artifact receipts. Source export contains only tracked reviewed project files, no build caches, private signing material, user data or Library identifiers. Delivery guards/identities remain in a separate private local receipt. Native rows stay NOT RUN until results from [RUNTIME_QA.md](RUNTIME_QA.md) and [DEVICE_TEST_PLAN.md](DEVICE_TEST_PLAN.md) are recorded. The affected app/S24 retest is required before calling the user's report resolved.
+Corrected0.1.6 was previously delivered after review as a limited trial.0.1.7 remains local and held;no public binary release/device install. [Composition](COMPOSITION.md), [threat model](THREAT_MODEL.md), [runtime gate](RUNTIME_QA.md), [device matrix](DEVICE_TEST_PLAN.md).

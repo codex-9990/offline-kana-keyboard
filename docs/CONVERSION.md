@@ -1,4 +1,4 @@
-# Offline conversion choice and 0.1.6 scope
+# Offline conversion choice and 0.1.7 scope
 
 ## This version
 
@@ -31,3 +31,7 @@ For full conversion, the next practical path is to pin a Mozc revision and depen
 [KazumaProject/JapaneseKeyboard (Sumire)](https://github.com/KazumaProject/JapaneseKeyboard) has an MIT code license. The inspected `dev` manifest requests RECORD_AUDIO, enables backup and cleartext traffic, and declares additional components. Its build file has multiple modules/flavors and data generation. Those facts do not prove a privacy violation, and the source was not exhaustively audited. They mean its README's offline claim cannot substitute for reviewing the assembled application. No source or binary was adopted into Koto.
 
 Direct GitHub downloads are blocked in this saved environment. The connected GitHub reader could not return the very large L dictionary, but could return the UTF-8 ML Git blob. The saved ML bytes were verified against that pinned blob and its SHA-256. No tiny hard-coded dictionary is used for the app; small fixtures exist only in tests.
+
+## Explicit-only field scope
+
+NO_SUGGESTIONS text, URI/email and FORCE_ASCII use only user-requested fixed-dictionary candidates plus kana/katakana fallbacks. No saved-history queries/records or generated segmented proposals run there. Ordinary body/WEB_EDIT_TEXT can use the existing bounded phrase worker;NO_PERSONALIZED_LEARNING/private mode suppress history independently. See [field matrix](COMPOSITION.md). These choices do not establish compatibility with the unspecified affected browser.

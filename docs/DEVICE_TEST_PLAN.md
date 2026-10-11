@@ -1,6 +1,6 @@
-# Android emulator and Galaxy S24 test plan — 0.1.6
+# Android emulator and Galaxy S24 test plan — 0.1.7
 
-**Every row below is NOT RUN on Android.** Host-model and artifact checks are in [VERIFICATION.md](VERIFICATION.md). Use synthetic text only; no actual user typing data is needed. The reporting app/field and Android/One UI versions remain unknown.
+**Every row below is NOT RUN on Android.** Host-model and artifact checks are in [VERIFICATION.md](VERIFICATION.md). Use synthetic text only; no actual user typing data is needed. The browser URL/search bar and a page field fail while a browser notepad works;browser name, actual flags and Android/One UI versions remain unknown.
 
 ## Prerequisites and device boundary
 
@@ -29,7 +29,10 @@ For UI QA derive gesture/tap bounds from a step-specific UI tree using adb -s "$
 | Dictionary/fallback | Real 日本/東京/食べる/書く;こう/しょうkana+katakana remain within64candidates; unknown input can confirm raw | NOT RUN |
 | Phrase proposals | LearningOFF/private:にほんにいきます/きょうはとうきょうにいきます/すしをたべます;分割labels, raw fallback, long/unknown/stale/cancelled work | NOT RUN |
 | Passwords | Text/visible/web/number password; direct syntheticA$1, no local draft/candidates/accessibility echo/learned lookup/records; symbolpages usable | NOT RUN |
-| Private/restricted | NO_PERSONAL flags/private keep static conversion without learned reads/writes; NO_SUGG/numeric direct; sensitive types prevent learning | NOT RUN |
+| Manual text/body/WebView | Body1 andWEB_EDIT_TEXT0xA1 with/withoutNO_SUGGESTIONS0x80000 andNO_PERSON0x01000000:local draft, first変換opens fixed list, edits close it, no history/records;normal notepad control keeps automatic candidates | NOT RUN |
+| URI/email/FORCE_ASCII | URI0x11,email0x21/web0xD1;FORCE_ASCII0x80000000 combinations:ABC default, ASCII usable, switchかな→reading→変換;Unicode rejection leaves draft, no host-validation bypass | NOT RUN |
+| Delayed candidates | Dictionary load/learning notification/old segmented completion before request and after field changes cannot reopen candidates;include repeated reading and normal→manual switches | NOT RUN |
+| Private/restricted | NO_PERSONAL flags/private keep static conversion without learned reads/writes; NO_SUGG recognized text:explicit fixed conversion/no history or segmented proposals;numeric/phone/date/unknown direct;ASCII defaults preserved; sensitive types prevent learning | NOT RUN |
 | Same-editor private settings | Return from settings without fresh onStartInput; current preference invalidates old learned preview/tap/queue; rapidON/OFF never revives old actions | NOT RUN |
 | Learning eligibility | DefaultOFF; exact lexical explicit candidate/preview-confirm only; raw/cancelled/failed/phrase choices do not save | NOT RUN |
 | Retention/clear | Synthetic clock:1/7/30/90days, expiry/shorten/extend/rollback; clear/Off during writes; old results cannot return; clear preserves dictionary/controls | NOT RUN |

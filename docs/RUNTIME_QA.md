@@ -27,7 +27,7 @@ After approval: install only these official packages into an isolated SDK direct
 
 Galaxy S24 validation requires separate physical-device approval. An emulator cannot validate One UI, real S24 latency or OEM transfer. Until observed results are recorded, all Android/device rows stay **NOT RUN** and this remains a development trial.
 
-## Minimum 0.1.6 native runtime gate — NOT RUN
+## Minimum 0.1.7 native runtime gate — NOT RUN
 
 A supported approved API 35 KVM emulator and a separately approved S24 test are still required. The APK, source and host tests are ready for review; setup approval and execution have not happened. Appname/field, Android/One UI version, inputType and imeOptions are needed for the affected-app synthetic retest; actual user text is not needed.
 
@@ -39,7 +39,8 @@ Minimum cases:
 2. Preview/cancel before coalesced3→3/late3→2 notifications; continue with another key, local deletion/modifier, space, mode changes and explicit cancel. No draft disappears or moves to the host implicitly. Preview cancellation remains usable if explicit commit is rejected.
 3. Move the actual native caret/selected range with draft present, including keyboard arrows and external host taps. Confirm at that actual position; preserve prefix/host-owned composing text. Empty-draft native DEL must work for selected text, emoji/combining clusters and local WebView. Unsupported finish/commit must show failure with editable draft, never be counted as successful conversion.
 4. Fresh focus/password/NO_SUGGESTIONS/numeric fields must not receive old draft state. Password entry must be direct without draft/candidate/accessibility echo; NO_PERSONALIZED_LEARNING and manual private mode must keep static conversion usable without learned reads/writes. Return from settings to the same editor, invalidate old learned previews/taps/queued choices and inspect no-backup files using only synthetic records.
-5. Rotation, hide/show, field restart and held-key cancellation: same-session relayout may retain local draft; hide or fresh start deliberately cancels it. Confirmed text stays once; no stale candidate/repeat crosses fields. Check portrait/landscape/font scaling/insets, haptics and latency on S24.
+5. Normal body/WEB_EDIT_TEXT, URL/search and local WebView page/notepad fixture variants:normal/NO_SUGGESTIONS,NO_PERSON andFORCE_ASCII combinations. Manual fields keep editable local draft, show fixed candidates only after first変換, never learned/segmented output. Edits/focus close requests;loading/notification/late work cannot reopen them. URI/email/FORCE_ASCII startABC and preserve ASCII keys;Unicode rejection remains editable without bypassing the host. Compare the user's browser contexts only after the actual browser is identified.
+6. Rotation, hide/show, field restart and held-key cancellation: same-session relayout may retain local draft; hide or fresh start deliberately cancels it. Confirmed text stays once; no stale candidate/repeat crosses fields. Check portrait/landscape/font scaling/insets, haptics and latency on S24.
 
 Diagnostic output belongs only in the synthetic fixture: operation ordering, API return booleans, cursor integers, field flags, counters and pass/fail. Do not log input strings, collect surrounding text or request actual user typing. Fixture text assertions need not print their payload. Record exact results and target versions; restore the emulator's prior IME. SDK setup authorization remains separate from physical-device authorization.
 
