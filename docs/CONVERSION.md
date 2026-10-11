@@ -1,4 +1,4 @@
-# Offline conversion choice and 0.1.4 scope
+# Offline conversion choice and 0.1.5 scope
 
 ## This version
 
@@ -10,7 +10,7 @@ The source dictionary's own header explicitly applies GPL v2 or later. The new a
 
 The lookup handles exact readings, basic okurigana by matching a stem and its SKK Roman initial, and hiragana/katakana fallback. Examples checked against the real bundled data: 日本, 東京, 漢字, 学校, 橋, 食べる, 書く. Unknown input still commits as kana. At most 64 candidates are shown. Version 0.1.1 reserves space for the distinct hiragana/katakana fallbacks, including ambiguous readings such as `こう`; late dictionary words can still be omitted.
 
-Version 0.1.4 adds **bounded heuristic segmentation** using this same dictionary, common particle boundaries and limited polite-ending transformations. It proposes at most four whole-phrase candidates, marked 分割. Verified real-data examples include 日本に行きます, 今日は東京に行きます, and sushi + を食べます. There is no hard-coded kanji vocabulary supplying those words. Word conversion and these proposals work with learning off and in private mode; generated phrases are never saved.
+Since 0.1.2 the app includes **bounded heuristic segmentation** using this same dictionary, common particle boundaries and limited polite-ending transformations. It proposes at most four whole-phrase candidates, marked 分割. Verified real-data examples include 日本に行きます, 今日は東京に行きます, and sushi + を食べます. There is no hard-coded kanji vocabulary supplying those words. Word conversion and these proposals work with learning off and in private mode; generated phrases are never saved.
 
 This is not a full SKK interaction model, Mozc, or a contextual linguistic engine. It has no trained cost model, surrounding-context capture, interactive segment-boundary editor or sentence history. Incorrect homophones, boundaries and unsupported conjugations remain possible. The dictionary is medium-large, not the complete SKK L dictionary, and can lack modern vocabulary. Raw kana/katakana remain available, and words can still be selected individually.
 

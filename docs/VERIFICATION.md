@@ -1,6 +1,6 @@
-# Verification report — 0.1.4 development trial
+# Verification report — 0.1.5 development trial
 
-Application source: **7ec8294534c3c8b99f0a6d096729c3bbb2947e19**. The APK is signed with the existing approved certificate and is not debuggable. **Android emulator, Galaxy S24 and conventional Gradle/lint checks remain NOT RUN.** No device was changed, SDK agreement accepted, key created or public APK release published.
+Application source: **c186fb47a0f4ff086444d3908994291d4dabf213**. The APK is signed with the existing approved certificate and is not debuggable. **Android emulator, Galaxy S24 and conventional Gradle/lint checks remain NOT RUN.** No device was changed, SDK agreement accepted, key created or public APK release published.
 
 ## Exact results
 
@@ -9,17 +9,19 @@ Application source: **7ec8294534c3c8b99f0a6d096729c3bbb2947e19**. The APK is sig
 | Existing production-core regressions | PASS — 36 groups | Flick mappings, input/composition, password/restricted fields, actions, candidate/Unicode safety |
 | New feature regressions | PASS — 42 groups | Retention, quotas, queue bounds, stale choices, failure recovery, real host files, layouts, sensitivity, phrase proposals |
 | Production ConnectionEditor API adapter | PASS — 14 groups | Actual Android API signatures; synthetic InputConnection and injected key sender |
-| Callback-aware composing editor | PASS — 24 groups | Visible text/span replacement, actual API signatures, queued/coalesced selection callbacks, flick release and dictionary selection |
+| Callback-aware composing editor | PASS — 30 groups | Visible text/span replacement, actual API signatures, queued/coalesced selection callbacks, flick release and dictionary selection |
+| Bounded sequence properties | PASS — 49,760 cases | Depth 0–4 over type/preview/cancel/ordered/coalesced/no-motion flush; range/span/region/batch/drain options; cursor targets distributed over 0/1/2 |
 | Before-fix reproduction | EXPECTED FAIL — reproduced | 0.1.2's unchanged callback predicate clears the first に; captured separately, not counted as a final passing check |
 | 0.1.3 cursor reproduction | EXPECTED FAIL — reproduced | Separate に/ほ/ん writes, flushed callbacks, then cursor 3→1 with missing range left the old reading active |
 | 0.1.3 stripped/delayed reproduction | EXPECTED FAIL — reproduced | Dropped span plus delayed に/ほ/ん callbacks produced ににほにほん |
+| 0.1.4 coalesced preview/cancel reproduction | EXPECTED FAIL — reproduced | Final 3→3 missing-range callback then real 3→2 left にほん active |
 | Source policy | PASS — 17 checks | No network/logging/surrounding reads; six non-text controls; file I/O confined to fixed-name no-backup adapter on worker |
 | Java API compilation/resources/DEX | PASS | Existing pinned AOSP API 35 jar, Maven AAPT2 and D8 |
-| Signed APK policy/content | PASS — 19 checks | Version code 5/name 0.1.4, zero permissions, debuggable=false, exports, backup XML, dictionary/assets, DEX/alignment |
+| Signed APK policy/content | PASS — 19 checks | Version code 6/name 0.1.5, zero permissions, debuggable=false, exports, backup XML, dictionary/assets, DEX/alignment |
 | Signature/certificate | PASS | apksig 8.7.3; v2/v3, API 26–35, one expected signer, zero errors/warnings |
 | Signed/unsigned payload equality | PASS — all 10 ZIP entries | Application payload bytes identical |
-| Tamper rejection | PASS | DEX byte changed with signature block retained; verifier rejected it; temporary copy removed |
-| Earlier APK preservation | PASS | Original 0.1.0, 0.1.1 and delivered 0.1.2/0.1.3 hashes unchanged |
+| Tamper rejection | PASS | Same valid/negative four-argument verifier invocation; modified DEX signature rejected with one error; temporary copies removed |
+| Earlier APK preservation | PASS | Original 0.1.0, 0.1.1, delivered 0.1.2/0.1.3 and local 0.1.4 hashes unchanged |
 | Unrelated project preservation | PASS | 175 tracked files unchanged; clean Git status |
 | Gradle build/lint/merged manifest | NOT RUN | SDK absent; alternative build's actual packaged manifest inspected |
 | Android install/IME registration/native events | NOT RUN | No SDK/emulator/KVM; no physical-device approval |
@@ -32,11 +34,15 @@ No unresolved failure remains in final executed checks. The user's 0.1.2 report 
 
 ## New test evidence
 
-The production service delegates selection callbacks to the adapter path under test. Missing candidate-range metadata and delayed self-generated callbacks previously called finishComposingText and emptied the reading. Version 0.1.3's expectations then stayed eligible after acknowledgement, and recovery waited for a missing-span callback. Independent review reproduced both further failures. Version 0.1.4 consumes the earliest matching ordered prefix, keeps only pending updates eligible, and restores a known owned span while writes are still unacknowledged. Unknown anchors/rejected operations stop instead of guessing. At most 64 coordinate records are kept, without strings, persistence or surrounding reads. See [COMPOSITION.md](COMPOSITION.md).
+The service delegates selection updates to the production ConnectionEditor under test. The first correction fixed missing-span/delayed typing callbacks. Independent review then reproduced incremental acknowledged-position reuse and dropped-span delayed duplication. Review of 0.1.4 additionally reproduced coalesced preview/cancel callbacks that left stale positions. All three review failures have separate retained before-fix logs.
 
-Eight added groups cover incremental acknowledged-position cursor moves, the combined dropped-span/delayed burst, prefix-preserving cursor targets with positive/missing bounds, delayed/coalesced restoration and preview cancellation, prefix consumption, unknown unacknowledged anchors, cursor/selection after a delayed burst, and acknowledgement without old-coordinate progression. Earlier tests separated the cases and missed these combinations. The original small API-port fixture now explicitly supports region recovery; the visible-buffer fixture tests unsupported recovery and callback behavior.
+Version 0.1.5 retires through the latest matching operation when the callback reports the current predicted cursor. Earlier positions are no longer eligible afterward. Non-current callbacks during/after an unacknowledged position reversal cannot reliably distinguish an old preview from a real cursor movement. The implementation ends composition, preserves visible text, invalidates the anchor and blocks composing/recovery writes until a fresh trusted EditorInfo selection. Unknown resets, later callbacks and privacy toggles do not clear this fence. Metadata remains at most 64 coordinate records plus flags; overflow marks ordering uncertain. No text history, timestamps, persistence or surrounding reads were added.
 
-Twenty-four groups verify normal/omitted/dropped spans, prefix preservation, immediate/delayed/coalesced callbacks, shorter candidate previews, cancellation/deletion, actual cursor/selection moves, NO_PERSONALIZED_LEARNING/manual private conversion without learning, password/NO_SUGGESTIONS direct input, rejected APIs, initial unknown selection, missing anchors, old commit/finish callbacks, restoration with unsupported batching, conflicting positive ranges and bounded metadata. Native Android/One UI callback timing remains NOT RUN.
+**This is a conservative usability tradeoff.** Rapid preview/cancel and shorter commits followed by the next word may stop conversion even for self-generated delayed callbacks. A Japanese status message asks for an editor restart. Explicit English/symbol direct input remains possible. Two older groups were updated to test fully acknowledged preview/commit transitions; separate new groups test the now-conservative ambiguous cases. The count does not mean every former delayed transition remains seamless.
+
+Thirty callback groups cover the previous typing/span/field cases, the exact new regression, interleaved old callbacks, shorter commits/new words, positive/missing aliases, privacy toggles, unknown resets, direct-mode fallback and metadata overflow. One group enumerates 49,760 synthetic sequences: all strings of length 0–4 over T/P/C/F/M/N (append, three preview lengths, cancel, ordered flush, last-reported/current-coordinate coalescing), crossed with range omission, span stripping, region callbacks, batching and cursor-drain choices. An independent visible-text oracle checks action semantics, prefix preservation, no callback text rewrites, cursor insertion or safe rejection, and fresh-adapter recovery. Cursor targets 0/1/2 are distributed by sequence index, not exhaustively crossed. This is bounded host-model evidence, not an Android event-loop/interprocess/host-application proof.
+
+The 0.1.4 coalesced trace failed before the fix with `Expected [empty]; got にほん`, retained in iteration-0.1.5-coalesced-before-fix.txt. The same scenario now clears the reading and refuses stale-span edits; a new adapter with trusted selection restores normal insertion. The original small API-port fixture supports region recovery explicitly; the physical-buffer fixture separately tests rejected recovery.
 
 Tests verify Off/1/7/30/90 policies, expiry at the boundary, no renewal on lookup, shortening, no revival on extension/clock rollback, private/restricted fields, explicit successful choices only, prefix metadata retaining the complete reading, 10,000 repeated choices coalesced to one write, 32 pending choices/one worker/one notification, 128-entry and 32-KiB deterministic eviction, reload, malformed/oversized/duplicate/truncated storage, stale generations, clear during a pending or active write, Off/startup cleanup, simulated write/delete/policy failures, and cleanup guards.
 
@@ -60,8 +66,8 @@ The host receives text and can transmit it. Compromised OS/root and privileged o
 
 ## Deliverables and runtime gate
 
-Selected evidence includes iteration-0.1.4 host/adapter/build/APK-policy logs, signature/payload receipts, actual manifest/backup dumps, source publication receipt and unchanged-project proof. Source and report exports exclude keys, credentials, private baseline inventories, Library identifiers and build caches.
+Selected evidence includes iteration-0.1.5 host/adapter/build/APK-policy logs, signature/payload receipts, actual manifest/backup dumps, source publication receipt and unchanged-project proof. Source and report exports exclude keys, credentials, private baseline inventories, Library identifiers and build caches.
 
-The source is published for independent review. The 0.1.4 APK and evidence archives are local artifacts; replacement delivery is held until that review. No 0.1.4 Library write has occurred.
+The source is published for independent review. The 0.1.5 APK and evidence archives are local artifacts; replacement delivery is held until that review. No 0.1.5 Library write has occurred.
 
 See [LOCAL_LEARNING.md](LOCAL_LEARNING.md), [CONVERSION.md](CONVERSION.md), [SIGNING.md](SIGNING.md) and [DEVICE_TEST_PLAN.md](DEVICE_TEST_PLAN.md). The earlier [0.1.0/0.1.1 audit](SECURITY_AUDIT.md) is historical. This update has no independent Android runtime audit or daily-use readiness claim.

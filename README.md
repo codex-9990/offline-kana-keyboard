@@ -1,12 +1,14 @@
-# Koto — Offline Japanese Keyboard 0.1.4
+# Koto — Offline Japanese Keyboard 0.1.5
 
 日本語 12 キーのフリック、英語 QWERTY、端末内の漢字候補を備えた Android キーボードの開発用試作版です。**学習は初期 OFF**。保存期間、フリック感度、キー高さ、振動を調整できます。ネットワーク権限・広告・解析・音声・クリップボード機能はありません。
 
-The signed 0.1.4 trial is not debuggable, uses the existing approved development certificate, and targets API 35 with minimum API 26. **Android emulator and Galaxy S24 runtime validation remain NOT RUN.** It is not yet validated for daily use.
+The signed 0.1.5 trial is not debuggable, uses the existing approved development certificate, and targets API 35 with minimum API 26. **Android emulator and Galaxy S24 runtime validation remain NOT RUN.** It is not yet validated for daily use.
 
-Version 0.1.4 addresses the reported 0.1.2 failure where each kana committed immediately. A new callback-aware host test reproduces that defect before the fix. Expected editor selection updates now preserve the reading; a missing span can be restored using known cursor metadata. Sequential に・ほ・ん → 日本 passes the new tests. **The user's app/device still needs a retest**; older host-test success did not establish that behavior. See [composition diagnosis](docs/COMPOSITION.md).
+Version 0.1.5 addresses the reported 0.1.2 failure where each kana committed immediately. A new callback-aware host test reproduces that defect before the fix. Expected editor selection updates now preserve the reading; a missing span can be restored using known cursor metadata. Sequential に・ほ・ん → 日本 passes the new tests. **The user's app/device still needs a retest**; older host-test success did not establish that behavior. See [composition diagnosis](docs/COMPOSITION.md).
 
-Independent review found two further 0.1.3 regressions: incremental typing followed by a cursor move could reuse an acknowledged position, and a dropped span during delayed callbacks could duplicate the reading. Both fail in the fixture before correction and pass in 0.1.4. Acknowledgements now consume pending updates; known spans are restored before unacknowledged replacement. **0.1.3 should not be used for daily typing.** 0.1.4 also remains a device-unverified trial.
+Independent review found two further 0.1.3 regressions: incremental typing followed by a cursor move could reuse an acknowledged position, and a dropped span during delayed callbacks could duplicate the reading. Both fail in the fixture before correction and pass in 0.1.5. Acknowledgements consume pending updates; known spans are restored before unacknowledged replacement. **0.1.3 should not be used for daily typing.** 0.1.5 also remains a device-unverified trial.
+
+Review of the local 0.1.4 trial found that a coalesced preview/cancel 3→3 callback could leave position 2 eligible, hiding a later real cursor move. The new before-fix test reproduces this. Current-position acknowledgements now retire through the latest match. **When delayed updates are ambiguous after a cursor-position reversal, visible text is preserved but kana conversion pauses until a fresh editor start.** The keyboard shows a Japanese restart message. Shorter commits followed immediately by a new word can also trigger this conservative stop. English/symbol direct input remains available. This usability limitation needs independent and device review; it is not seamless callback recovery.
 
 ## Implemented controls
 
@@ -48,7 +50,7 @@ Use a complete JDK 17+, Python 3 and curl on Linux x86_64:
 
 Fetch explicitly obtains three pinned recognized open-source compiler artifacts; they are not packaged in the app. Later builds omit --fetch. This route installs no Android SDK, accepts no SDK agreement, creates no key and operates no device. See [toolchain provenance](docs/TOOLCHAIN.md).
 
-Unsigned non-debuggable output: dist/offline-kana-keyboard-0.1.4-trial-unsigned.apk. Signed private-delivery trial: dist/offline-kana-keyboard-0.1.4-trial.apk. Version code **5** uses the same certificate as earlier trials. Check [artifact/signature receipt](docs/SIGNING.md) before a separately approved device installation.
+Unsigned non-debuggable output: dist/offline-kana-keyboard-0.1.5-trial-unsigned.apk. Signed private-delivery trial: dist/offline-kana-keyboard-0.1.5-trial.apk. Version code **6** uses the same certificate as earlier trials. Check [artifact/signature receipt](docs/SIGNING.md) before a separately approved device installation.
 
 A conventional approved-SDK build uses ANDROID_SDK_ROOT and scripts/build_debug.sh. SDK auto-download is disabled. Gradle build/lint remain NOT RUN here because the SDK is absent. [RUNTIME_QA.md](docs/RUNTIME_QA.md) describes setup approval and KVM requirements; [DEVICE_TEST_PLAN.md](docs/DEVICE_TEST_PLAN.md) remains the daily-use validation gate.
 
@@ -58,6 +60,6 @@ Phrase costs/segmentation are heuristic, not Mozc, a linguistic grammar engine o
 
 Application code, tests, documentation and SKK dictionary are **GPL-2.0-or-later**. Original dictionary source/header, notices and GPL text are retained. Gradle wrapper utilities are separately Apache-2.0. No Sumire/Gboard/Mozc executable or code was adopted.
 
-Source: [codex-9990/offline-kana-keyboard](https://github.com/codex-9990/offline-kana-keyboard). Application commit: **7ec8294534c3c8b99f0a6d096729c3bbb2947e19**. Delivery uses the user's Library; no public APK release, device installation or new signing identity was created.
+Source: [codex-9990/offline-kana-keyboard](https://github.com/codex-9990/offline-kana-keyboard). Application commit: **c186fb47a0f4ff086444d3908994291d4dabf213**. Delivery uses the user's Library; no public APK release, device installation or new signing identity was created.
 
-The 0.1.4 APK and review packet are prepared locally. Replacement delivery is held pending independent review; this version has not replaced the Library trial.
+The 0.1.5 APK and review packet are prepared locally. Replacement delivery is held pending independent review; this version has not replaced the Library trial.

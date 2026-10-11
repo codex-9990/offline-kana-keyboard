@@ -39,6 +39,7 @@ For emulator UI QA, dump a step-specific UI tree with `adb -s "$serial" exec-out
 | Reported composition failure | In the reporting app and a standard editor, flick に・ほ・ん sequentially, retain the underline/reading until explicit 日本 selection; test omitted/late callbacks, prefix preservation, NO_PERSONALIZED_LEARNING and private mode; check app-rejected recovery error | NOT RUN |
 | 0.1.3 combined regressions | Type に/ほ/ん with callbacks after each, then move cursor 3→1 and insert あ at the actual position; also test dropped spans plus delayed/coalesced bursts and preview/cancel; preceding host text must stay intact | NOT RUN |
 | Controls | Height extremes, default 58 dp, landscape 44 dp; haptic off/on and global Android setting | NOT RUN |
+| 0.1.4 coalesced preview/cancel | Type にほん, preview 日本, cancel before callback; test final 3→3 and subsequent 3→2. Confirm visible text survives, ambiguous conversion pauses with restart message, no stale region is restored, direct English input works and fresh editor start resumes kana | NOT RUN |
 | Insets/S24 | Gesture/button navigation, status of IME padding, cutout, accessibility scaling and One UI layouts | NOT RUN |
 | Local persistence | With learning OFF or raw marker typing, no lexical files; with explicit eligible choices and learning ON, only bounded no-backup lexical data and controls preferences; inspect backup/transfer eligibility | NOT RUN |
 | Logs | Capture process-scoped logcat and crash buffer while typing synthetic markers; no markers should appear | NOT RUN |
