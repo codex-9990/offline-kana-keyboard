@@ -140,6 +140,143 @@ public final class CoreTests {
             Editor e = new Editor(); InputSession s = start(e,1,0);
             for (int i=0;i<65;i++) s.type("あ"); eq(64,e.committed.length()); eq("あ",s.text());
         });
+        test("candidate preview keeps reading and confirms before continuing kana", () -> {
+            Editor e = new Editor(); InputSession s = start(e,1,0);
+            s.type("にほん"); yes(s.preview("日本",s.revision()));
+            eq("にほん",s.text()); eq("日本",e.composition); eq("",e.committed);
+            s.type("ご"); eq("日本",e.committed); eq("ご",s.text()); eq("",s.preview());
+            s.enter(); eq("日本ご",e.committed); s.enter(); eq(1,e.enters);
+        });
+        test("backspace cancels preview before deleting reading", () -> {
+            Editor e = new Editor(); InputSession s = start(e,1,0);
+            s.type("にほん"); yes(s.preview("日本",s.revision())); s.backspace();
+            eq("にほん",s.text()); eq("にほん",e.composition); eq("",s.preview()); eq(0,e.deletes);
+            s.backspace(); eq("にほ",s.text()); eq("",e.committed);
+            yes(s.preview("二歩",s.revision())); s.modify(); eq("にぼ",s.text()); eq("",s.preview());
+        });
+        test("mode, cursor, space and Enter commit the preview exactly once", () -> {
+            for (int operation=0;operation<4;operation++) {
+                Editor e = new Editor(); InputSession s = start(e,1,0);
+                s.type("はし"); yes(s.preview("橋",s.revision()));
+                if (operation==0) s.mode(InputSession.Mode.ENGLISH);
+                if (operation==1) s.cursor(-1);
+                if (operation==2) s.space();
+                if (operation==3) s.enter();
+                eq(operation==2 ? "橋 " : "橋",e.committed); eq("",s.text()); eq("",s.preview());
+                eq(0,e.enters); s.commitComposition(); eq(operation==2 ? "橋 " : "橋",e.committed);
+            }
+        });
+        test("failed preview, confirmation and cancellation retain valid state", () -> {
+            Editor e = new Editor(); InputSession s = start(e,1,0);
+            s.type("にほん"); long revision=s.revision(); e.accepting=false;
+            no(s.preview("日本",revision)); eq(revision,s.revision()); eq("",s.preview());
+            e.accepting=true; yes(s.preview("日本",s.revision())); e.accepting=false;
+            s.type("ご"); s.mode(InputSession.Mode.ENGLISH); s.backspace();
+            eq("にほん",s.text()); eq("日本",s.preview()); eq("日本",e.composition);
+            eq(InputSession.Mode.KANA,s.mode()); eq("",e.committed);
+            e.accepting=true; s.backspace(); eq("にほん",e.composition); eq("",s.preview());
+        });
+        test("stale candidate actions cannot replace repeated readings or new fields", () -> {
+            Editor first = new Editor(); InputSession s = start(first,1,0); s.type("にほん");
+            long stale=s.revision(); yes(s.select("日本",stale)); s.type("にほん");
+            no(s.select("日本",stale)); no(s.preview("日本",stale)); eq("にほん",s.text());
+            Editor second = new Editor(); s.start(second,FieldPolicy.from(1,0)); s.type("にほん");
+            no(s.select("日本",stale)); eq("",second.committed);
+            no(s.select(null)); no(s.select("")); eq("にほん",s.text());
+        });
+        test("preview lifecycle and field switches preserve visible text without leakage", () -> {
+            Editor first = new Editor(), second = new Editor(); InputSession s = start(first,1,0);
+            s.type("にほん"); yes(s.preview("日本",s.revision()));
+            s.selectionMovedOutsideComposition(); eq("日本",first.committed); eq("",s.text()); eq("",s.preview());
+            s.finish(); eq("日本",first.committed); s.start(second,FieldPolicy.from(0x81,0)); s.type("x");
+            eq("x",second.committed); eq("",s.preview()); no(s.hasCandidates());
+            s.mode(InputSession.Mode.ENGLISH); s.shift(); s.selectionMovedOutsideComposition(); no(s.shifted());
+        });
+        test("restricted fields refuse candidate preview; FORCE_ASCII starts English", () -> {
+            for (int type : new int[]{0x81,0x91,0xe1,0x12,0x80001}) {
+                Editor e = new Editor(); InputSession s = start(e,type,0); s.mode(InputSession.Mode.KANA); s.type("かな");
+                no(s.preview("仮名",s.revision())); eq("",s.preview()); eq("",s.text()); eq("かな",e.committed);
+            }
+            Editor e = new Editor(); InputSession s = start(e,1,0x80000000);
+            eq(InputSession.Mode.ENGLISH,s.mode()); s.type("a"); eq("a",e.committed);
+            s = start(new Editor(),1,0x1000000); s.type("にほん"); yes(s.preview("日本",s.revision()));
+            yes(s.policy().noPersonalizedLearning);
+        });
+        test("failed direct input keeps one-shot Shift until a successful write", () -> {
+            Editor e = new Editor(); InputSession s = start(e,0x81,0); s.shift(); e.accepting=false;
+            s.type("a"); yes(s.shifted()); eq("",e.committed);
+            e.accepting=true; s.type("a"); no(s.shifted()); s.type("b"); eq("Ab",e.committed); eq("",s.text());
+        });
+        test("sustained repeated conversion produces no duplicate or stale commits", () -> {
+            Editor e = new Editor(); InputSession s = start(e,1,0); StringBuilder expected=new StringBuilder();
+            for(int i=0;i<100;i++) {
+                s.type("に"); s.type("ほ"); s.type("ん"); long revision=s.revision();
+                yes(s.preview("日本",revision)); no(s.select("wrong",revision)); s.enter(); expected.append("日本");
+            }
+            eq(expected.toString(),e.committed); eq("",s.text()); eq("",s.preview());
+        });
+        test("gesture release emits once; cancelled and outside button drags emit none", () -> {
+            KeyGesture flick = new KeyGesture(true,false,22); no(flick.begin(50,50));
+            flick.move(-10,50,false); eq(FlickLayout.LEFT,flick.end(-10,50,false)); eq(-1,flick.end(-10,50,false));
+            flick.begin(50,50); flick.cancel(); eq(-1,flick.end(50,20,true));
+            KeyGesture button = new KeyGesture(false,false,22); button.begin(50,50);
+            button.move(120,50,false); eq(-1,button.end(50,50,true));
+            button.begin(50,50); eq(FlickLayout.CENTER,button.end(50,50,true));
+        });
+        test("repeat begins immediately and stops on release, cancel or drag outside", () -> {
+            KeyGesture key = new KeyGesture(false,true,22); yes(key.begin(50,50));
+            for(int i=0;i<5;i++) yes(key.repeat());
+            eq(-1,key.end(50,50,true)); no(key.repeat());
+            yes(key.begin(50,50)); key.cancel(); no(key.repeat());
+            yes(key.begin(50,50)); key.move(150,50,false); no(key.repeat());
+            eq(-1,key.end(50,50,true));
+        });
+        test("common readings always retain bounded kana and katakana choices", () -> {
+            SkkDictionary d = SkkDictionary.load(new FileInputStream(args[0]));
+            for(String reading : new String[]{"こう","しょう","か","あ","きょう"}) {
+                List<String> choices=d.candidates(reading); yes(choices.size()<=64);
+                yes(choices.contains(reading)); yes(choices.contains(FlickLayout.katakana(reading)));
+                eq(choices.size(),new java.util.HashSet<>(choices).size());
+            }
+        });
+        test("every printable ASCII character is available through the production layouts", () -> {
+            java.util.Set<String> available=new java.util.HashSet<>(); available.add(" ");
+            for(int r=0;r<3;r++) for(char c:SymbolLayout.englishRow(r).toCharArray()) {
+                available.add(String.valueOf(c)); available.add(String.valueOf(Character.toUpperCase(c)));
+            }
+            for(int page=0;page<SymbolLayout.pages();page++) for(int r=0;r<3;r++)
+                available.addAll(java.util.Arrays.asList(SymbolLayout.row(page,r)));
+            available.addAll(java.util.Arrays.asList(SymbolLayout.bottom()));
+            for(int c=32;c<=126;c++) yes(available.contains(String.valueOf((char)c)));
+            yes(available.contains("~")); eq("〜",FlickLayout.kana(10,FlickLayout.DOWN));
+            String[] clone=SymbolLayout.row(0,0); clone[0]="bad"; eq("1",SymbolLayout.row(0,0)[0]);
+        });
+        test("synthetic A-dollar-1 password can be entered without composition or candidates", () -> {
+            Editor e=new Editor(); InputSession s=start(e,0x81,0); s.shift(); s.type("a");
+            s.mode(InputSession.Mode.SYMBOLS); yes(java.util.Arrays.asList(SymbolLayout.bottom()).contains("$"));
+            s.type("$"); s.type(SymbolLayout.row(0,0)[0]); eq("A$1",e.committed); eq("",s.text()); no(s.hasCandidates());
+            for(String value:new String[]{"[","]","{","}","<",">","^","`","|","~"}) s.type(value);
+            eq("",s.text()); eq("",s.preview()); no(s.hasCandidates());
+        });
+        test("standard editor labels correspond to executable action IDs", () -> {
+            String[] labels={"移動","検索","送信","次へ","完了","前へ"};
+            for(int id=2;id<=7;id++) {
+                EditorAction action=EditorAction.from(id,0,null); yes(action.enabled()); eq(id,action.id()); eq(labels[id-2],action.label());
+            }
+            no(EditorAction.from(0,0,null).enabled()); no(EditorAction.from(255,0,null).enabled());
+        });
+        test("custom actions share an explicit label and safely handle suppressed or missing captions", () -> {
+            EditorAction custom=EditorAction.from(0,42,"保存"); yes(custom.enabled()); eq(42,custom.id()); eq("実行\n保存",custom.label());
+            eq("実行\n↵",EditorAction.from(0,42,"↵").label());
+            no(EditorAction.from(0x40000000,42,"保存").enabled()); eq("↵",EditorAction.from(0x40000000,42,"保存").label());
+            no(EditorAction.from(0,42," \t\n").enabled());
+        });
+        test("host action captions are bounded and stripped of control and bidi formatting", () -> {
+            EditorAction action=EditorAction.from(0,42,"\u202E保\u200B存\n"); eq("実行\n保存",action.label());
+            StringBuilder huge=new StringBuilder(); for(int i=0;i<5000;i++) huge.append("あ");
+            action=EditorAction.from(0,42,huge); yes(action.label().length()<16); yes(action.description().length()<50);
+            no(EditorAction.from(0,42,"\ud800").enabled());
+        });
         test("dictionary parser strips annotations; never evaluates SKK expressions", () -> {
             String data = "ねこ\t猫;animal\nたべr\t食べ\nあ\t(concat evil)\t#1\t亜\n";
             SkkDictionary d = SkkDictionary.load(new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8)));

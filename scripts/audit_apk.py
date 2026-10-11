@@ -9,6 +9,7 @@ import sys
 import zipfile
 import xml.etree.ElementTree as ET
 from axml import decode
+from project_version import VERSION_CODE, VERSION_NAME
 
 ROOT = Path(__file__).resolve().parents[1]
 APK = Path(sys.argv[1]).resolve()
@@ -45,6 +46,9 @@ check("packaged APK requests zero permissions", not any(n.tag.startswith("uses-p
       and "uses-permission:" not in badging)
 check("APK identity, minimum API 26 and target API 35", manifest_xml.get("package") == "dev.local.koto"
       and sdk.get(A + "minSdkVersion") == "26" and sdk.get(A + "targetSdkVersion") == "35")
+check("APK version code and name match project version", manifest_xml.get(A + "versionCode") == str(VERSION_CODE)
+      and manifest_xml.get(A + "versionName") == VERSION_NAME)
+check("packaged APK is not debuggable", app.get(A + "debuggable") == "false")
 check("packaged backup and cleartext flags disabled", app.get(A + "allowBackup") == "false"
       and app.get(A + "usesCleartextTraffic") == "false")
 service = app.find("service")
@@ -91,7 +95,7 @@ with zipfile.ZipFile(APK) as archive:
     (evidence / "dex-strings.txt").write_text("\n".join(strings))
     forbidden = ("Ljava/net/", "Landroid/webkit/", "Landroid/speech/", "Landroid/content/ClipboardManager;",
                  "Landroid/util/Log;", "Lcom/google/firebase/", "Lokhttp", "Lretrofit", "Lio/sentry/",
-                 "CoreTests", "ImeSmokeInstrumentation", "SyntheticOnly42")
+                 "CoreTests", "ConnectionEditorHostTests", "ImeSmokeInstrumentation", "SyntheticOnly42")
     check("DEX has no network, WebView, speech, logging, telemetry or test-data references", not any(
         fragment in value for value in strings for fragment in forbidden))
     # The android-all compilation jar and build tools must never enter the APK.
@@ -100,12 +104,12 @@ with zipfile.ZipFile(APK) as archive:
     class_count, class_offset = struct.unpack_from("<II", dex, 96)
     classes = [types[struct.unpack_from("<I", dex, class_offset + 32 * i)[0]] for i in range(class_count)]
     check("all defined DEX classes are this project's namespace", all(c.startswith("Ldev/local/koto/") for c in classes))
-    check("unsigned APK has no v1 signature files", not any(re.search(r"META-INF/.*\.(RSA|DSA|EC|SF)$", n) for n in names))
+    check("APK has no legacy v1 signature files", not any(re.search(r"META-INF/.*\.(RSA|DSA|EC|SF)$", n) for n in names))
     entry = archive.getinfo("resources.arsc")
     with APK.open("rb") as source:
         source.seek(entry.header_offset + 26)
         filename_len, extra_len = struct.unpack("<HH", source.read(4))
     offset = entry.header_offset + 30 + filename_len + extra_len
     check("resource table is stored and aligned to four bytes", entry.compress_type == zipfile.ZIP_STORED and offset % 4 == 0)
-print("PASS: " + str(passed) + " packaged APK checks; signature/install/runtime NOT RUN")
+print("PASS: " + str(passed) + " packaged APK checks; signature/install/runtime require separate verification")
 print("APK SHA-256:", hashlib.sha256(APK.read_bytes()).hexdigest())

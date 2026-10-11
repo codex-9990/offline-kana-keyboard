@@ -10,7 +10,7 @@ import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
-import dev.local.koto.core.FlickLayout;
+import dev.local.koto.core.KeyGesture;
 
 /** A pointer gesture emits one character on release; cancelled gestures emit none. */
 public final class KeyView extends View {
@@ -21,13 +21,13 @@ public final class KeyView extends View {
     private final String[] flick;
     private final Listener listener;
     private final boolean haptics, repeatable, accent;
-    private boolean down, repeated;
-    private float startX, startY;
-    private int direction, clickDirection;
+    private final KeyGesture gesture;
+    private int clickDirection;
     private final Runnable repeat = new Runnable() {
         @Override public void run() {
-            if (!down) return;
-            repeated = true; listener.press(0); postDelayed(this, 85);
+            if (!gesture.repeat()) return;
+            listener.press(0);
+            if (gesture.repeat()) postDelayed(this, 85);
         }
     };
     public KeyView(Context context, String label, String[] flick, Listener listener,
@@ -35,6 +35,7 @@ public final class KeyView extends View {
         super(context);
         this.label = label; this.flick = flick; this.listener = listener;
         this.haptics = haptics; this.repeatable = repeatable; this.accent = accent;
+        gesture = new KeyGesture(flick != null, repeatable, dp(22));
         setClickable(true); setFocusable(true); setFilterTouchesWhenObscured(true);
         setContentDescription(flick == null ? label : label + "。左 " + flick[1]
                 + "、上 " + flick[2] + "、右 " + flick[3] + "、下 " + flick[4]);
@@ -45,14 +46,22 @@ public final class KeyView extends View {
     @Override protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         rect.set(dp(2), dp(2), getWidth() - dp(2), getHeight() - dp(2));
-        paint.setColor(down ? 0xff467467 : accent ? 0xff8ddfc7 : 0xff2d3e49);
+        paint.setColor(gesture.active() ? 0xff467467 : accent ? 0xff8ddfc7 : 0xff2d3e49);
         canvas.drawRoundRect(rect, dp(9), dp(9), paint);
         paint.setColor(accent ? 0xff102b25 : 0xfff4f4ee);
         paint.setTextAlign(Paint.Align.CENTER);
         paint.setTextSize(sp(flick == null && label.length() > 3 ? 13 : 21));
-        String main = flick != null && down ? flick[direction] : label;
-        canvas.drawText(main, getWidth() / 2f, getHeight() / 2f - (paint.ascent() + paint.descent()) / 2f, paint);
-        if (flick != null && !down) {
+        String main = flick != null && gesture.active() ? flick[gesture.direction()] : label;
+        String[] lines = main.split("\n",-1);
+        if (lines.length > 1) paint.setTextSize(sp(13));
+        for (String line : lines) {
+            float measured = paint.measureText(line), width = Math.max(dp(8),getWidth()-dp(12));
+            if (measured > width) paint.setTextSize(paint.getTextSize()*width/measured);
+        }
+        float lineHeight = paint.descent()-paint.ascent();
+        for (int i=0;i<lines.length;i++) canvas.drawText(lines[i],getWidth()/2f,
+                getHeight()/2f-(paint.ascent()+paint.descent())/2f+(i-(lines.length-1)/2f)*lineHeight,paint);
+        if (flick != null && !gesture.active()) {
             paint.setTextSize(sp(10)); paint.setColor(0xffb5c8c9);
             float middle = getHeight() / 2f - (paint.ascent() + paint.descent()) / 2f;
             canvas.drawText(flick[1], dp(13), middle, paint);
@@ -63,35 +72,44 @@ public final class KeyView extends View {
     }
     @Override public boolean onTouchEvent(MotionEvent event) {
         if (!isEnabled()) return false;
-        if (event.getPointerCount() > 1) { cancel(); return true; }
+        if (event.getPointerCount() > 1) { cancelGesture(); return true; }
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
-                down = true; repeated = false; direction = 0;
-                startX = event.getX(); startY = event.getY();
+                boolean emitNow = gesture.begin(event.getX(), event.getY());
                 if (haptics) performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
-                if (repeatable) postDelayed(repeat, 450);
+                if (emitNow) { clickDirection = 0; performClick(); }
+                if (repeatable && gesture.active()) postDelayed(repeat, 450);
                 invalidate(); return true;
             case MotionEvent.ACTION_MOVE:
-                if (down && flick != null) direction = FlickLayout.direction(event.getX() - startX,
-                        event.getY() - startY, dp(22));
+                gesture.move(event.getX(), event.getY(), inside(event));
+                if (!gesture.active()) removeCallbacks(repeat);
                 invalidate(); return true;
             case MotionEvent.ACTION_UP:
-                if (!down) return true;
-                if (flick != null) direction = FlickLayout.direction(event.getX() - startX,
-                        event.getY() - startY, dp(22));
-                clickDirection = direction;
-                if (!repeated) performClick();
-                clickDirection = 0; cancel(); return true;
+                int releaseDirection = gesture.end(event.getX(), event.getY(), inside(event));
+                removeCallbacks(repeat);
+                if (releaseDirection >= 0) { clickDirection = releaseDirection; performClick(); }
+                clickDirection = 0; invalidate(); return true;
             case MotionEvent.ACTION_CANCEL:
-                cancel(); return true;
+                cancelGesture(); return true;
             default: return true;
         }
     }
-    private void cancel() { down = false; removeCallbacks(repeat); invalidate(); }
+    private boolean inside(MotionEvent event) {
+        return event.getX() >= 0 && event.getX() < getWidth() && event.getY() >= 0 && event.getY() < getHeight();
+    }
+    public void cancelGesture() {
+        if (gesture != null) gesture.cancel();
+        clickDirection = 0; removeCallbacks(repeat); invalidate();
+    }
     @Override public boolean performClick() {
+        if (!isEnabled()) return false;
         super.performClick(); listener.press(clickDirection); return true;
     }
-    @Override protected void onDetachedFromWindow() { cancel(); super.onDetachedFromWindow(); }
+    @Override protected void onDetachedFromWindow() { cancelGesture(); super.onDetachedFromWindow(); }
+    @Override protected void onWindowVisibilityChanged(int visibility) {
+        if (visibility != VISIBLE) cancelGesture();
+        super.onWindowVisibilityChanged(visibility);
+    }
     @Override public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
         super.onInitializeAccessibilityNodeInfo(info);
         info.setClassName("android.widget.Button");
@@ -99,6 +117,7 @@ public final class KeyView extends View {
             info.addAction(new AccessibilityNodeInfo.AccessibilityAction(0x01000000 + i, flick[i]));
     }
     @Override public boolean performAccessibilityAction(int action, Bundle args) {
+        if (!isEnabled()) return false;
         if (flick != null && action > 0x01000000 && action <= 0x01000004) {
             listener.press(action - 0x01000000); return true;
         }

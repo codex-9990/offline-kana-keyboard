@@ -16,7 +16,8 @@ public final class FieldPolicy {
         boolean numeric = type == 2 || type == 3 || type == 4;
         boolean noLearning = (imeOptions & 0x1000000) != 0;
         boolean candidates = type == 1 && !password && (inputType & 0x80000) == 0;
-        boolean ascii = password || (type == 1 && (variation == 0x10 || variation == 0x20 || variation == 0xd0));
+        boolean ascii = password || (imeOptions & 0x80000000) != 0
+                || (type == 1 && (variation == 0x10 || variation == 0x20 || variation == 0xd0));
         return new FieldPolicy(password, noLearning, numeric, candidates, ascii);
     }
 }

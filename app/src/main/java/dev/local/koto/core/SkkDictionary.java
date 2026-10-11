@@ -45,20 +45,29 @@ public final class SkkDictionary {
     public List<String> candidates(String reading) {
         if (reading.isEmpty()) return Collections.emptyList();
         LinkedHashSet<String> result = new LinkedHashSet<>();
+        String katakana = FlickLayout.katakana(reading);
+        // Reserve room for raw kana and katakana even for highly ambiguous readings.
+        int wordLimit = 64 - (reading.equals(katakana) ? 1 : 2);
         List<String> exact = entries.get(reading);
-        if (exact != null) result.addAll(exact);
+        if (exact != null) for (String word : exact) {
+            if (!word.equals(reading) && !word.equals(katakana)) result.add(word);
+            if (result.size() >= wordLimit) break;
+        }
         // Longest matching stem first. SKK's okuri key ends in a Roman initial.
-        for (int split = reading.length() - 1; split > 0 && result.size() < 64; split--) {
+        for (int split = reading.length() - 1; split > 0 && result.size() < wordLimit; split--) {
             String suffix = reading.substring(split);
             String initial = okuriInitial(suffix.charAt(0));
             if (initial.isEmpty()) continue;
             List<String> stems = entries.get(reading.substring(0, split) + initial);
-            if (stems != null) for (String stem : stems) result.add(stem + suffix);
+            if (stems != null) for (String stem : stems) {
+                String word = stem + suffix;
+                if (!word.equals(reading) && !word.equals(katakana)) result.add(word);
+                if (result.size() >= wordLimit) break;
+            }
         }
         result.add(reading);
-        result.add(FlickLayout.katakana(reading));
-        List<String> limited = new ArrayList<>(result);
-        return Collections.unmodifiableList(limited.subList(0, Math.min(64, limited.size())));
+        result.add(katakana);
+        return Collections.unmodifiableList(new ArrayList<>(result));
     }
     private static String okuriInitial(char kana) {
         String[] rows = {"ぁあ", "ぃい", "ぅう", "ぇえ", "ぉお", "かきくけこ", "がぎぐげご",

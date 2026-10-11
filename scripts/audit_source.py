@@ -20,6 +20,8 @@ def check(name, condition):
 manifest = ET.parse(ROOT / "app/src/main/AndroidManifest.xml").getroot()
 check("manifest requests zero permissions", not any(n.tag.startswith("uses-permission") for n in manifest))
 app = manifest.find("application")
+check("application debugging disabled", app.get(A + "debuggable") == "false"
+      and "debuggable false" in (ROOT / "app/build.gradle").read_text())
 check("backup disabled and cleartext disabled", app.get(A + "allowBackup") == "false"
       and app.get(A + "usesCleartextTraffic") == "false")
 check("backup rule resources are linked", app.get(A + "fullBackupContent") == "@xml/backup_rules"

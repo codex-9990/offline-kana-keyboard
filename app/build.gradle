@@ -1,4 +1,6 @@
 plugins { id 'com.android.application' }
+def trialVersion = new Properties()
+rootProject.file('version.properties').withInputStream { trialVersion.load(it) }
 
 android {
     namespace 'dev.local.koto'
@@ -8,8 +10,8 @@ android {
         applicationId 'dev.local.koto'
         minSdk 26
         targetSdk 35
-        versionCode 1
-        versionName '0.1.0'
+        versionCode trialVersion.getProperty('versionCode').toInteger()
+        versionName trialVersion.getProperty('versionName')
         testInstrumentationRunner 'dev.local.koto.ImeSmokeInstrumentation'
     }
     // Deliberately do not create a signing identity. Supply an existing test
@@ -26,7 +28,7 @@ android {
         }
     }
     buildTypes {
-        debug { signingConfig approvedKey ? signingConfigs.approvedDebug : null }
+        debug { debuggable false; signingConfig approvedKey ? signingConfigs.approvedDebug : null }
         release { signingConfig null; minifyEnabled false }
     }
     compileOptions {

@@ -13,61 +13,91 @@ public final class InputSession {
         void enter();
     }
     private Editor editor;
-    private String composing = "";
+    private String composing = "", preview = "";
+    private long revision;
     private FieldPolicy policy = FieldPolicy.from(1, 0);
     private Mode mode = Mode.KANA;
     private boolean shifted;
     public void start(Editor editor, FieldPolicy policy) {
         // Never move a previous editor's composition to a newly focused editor.
-        composing = ""; shifted = false; this.editor = editor; this.policy = policy;
+        if (this.editor != null) this.editor.finish();
+        composing = ""; preview = ""; shifted = false; this.editor = editor; this.policy = policy;
         mode = policy.numeric ? Mode.SYMBOLS : policy.ascii ? Mode.ENGLISH : Mode.KANA;
+        revision++;
     }
     public String text() { return composing; }
+    public String preview() { return preview; }
+    public long revision() { return revision; }
     public FieldPolicy policy() { return policy; }
     public Mode mode() { return mode; }
     public boolean shifted() { return shifted; }
     public boolean hasCandidates() { return policy.candidates && mode == Mode.KANA && !composing.isEmpty(); }
-    public void shift() { shifted = !shifted; }
+    public void shift() { shifted = !shifted; revision++; }
     public void mode(Mode next) {
         commitComposition();
         if (!composing.isEmpty()) return;
-        mode = next; shifted = false;
+        mode = next; shifted = false; revision++;
     }
     public void type(String value) {
         if (editor == null || value == null || value.isEmpty()) return;
+        // Continuing to type confirms the visibly selected word before a new reading.
+        if (!preview.isEmpty()) {
+            commitComposition();
+            if (!composing.isEmpty()) return;
+        }
         if (mode == Mode.KANA && policy.candidates) {
             if (composing.codePointCount(0, composing.length()) >= 64) {
                 commitComposition();
                 if (!composing.isEmpty()) return;
             }
             String next = composing + value;
-            if (editor.composing(next)) composing = next;
+            if (editor.composing(next)) { composing = next; revision++; }
         } else {
             String next = mode == Mode.ENGLISH && shifted ? value.toUpperCase(java.util.Locale.ROOT) : value;
-            editor.commit(next); shifted = false;
+            if (editor.commit(next)) { shifted = false; revision++; }
         }
+    }
+    public boolean preview(String value, long expectedRevision) {
+        if (expectedRevision != revision || !hasCandidates() || value == null || value.isEmpty()) return false;
+        if (value.equals(preview)) return true;
+        if (!editor.composing(value)) return false;
+        preview = value; revision++; return true;
+    }
+    private boolean cancelPreview() {
+        if (preview.isEmpty()) return true;
+        if (!editor.composing(composing)) return false;
+        preview = ""; revision++; return true;
     }
     public void modify() {
         if (editor == null || composing.isEmpty()) return;
+        if (!cancelPreview()) return;
         String next = FlickLayout.modifyLast(composing);
-        if (editor.composing(next)) composing = next;
+        if (!next.equals(composing) && editor.composing(next)) { composing = next; revision++; }
     }
     public void backspace() {
         if (editor == null) return;
-        if (composing.isEmpty()) { editor.delete(); return; }
+        // First backspace cancels conversion; the next deletes a reading code point.
+        if (!preview.isEmpty()) { cancelPreview(); return; }
+        if (composing.isEmpty()) { editor.delete(); revision++; return; }
         String next = composing.substring(0, composing.offsetByCodePoints(composing.length(), -1));
         if (editor.composing(next)) {
-            composing = next;
+            composing = next; revision++;
             if (next.isEmpty()) editor.finish();
         }
     }
-    public void select(String value) {
-        if (editor == null || composing.isEmpty() || !hasCandidates()) return;
-        if (editor.commit(value)) { composing = ""; editor.finish(); }
+    public boolean select(String value, long expectedRevision) {
+        return expectedRevision == revision && select(value);
+    }
+    public boolean select(String value) {
+        if (editor == null || !hasCandidates() || value == null || value.isEmpty()) return false;
+        if (!editor.commit(value)) return false;
+        composing = ""; preview = ""; revision++; editor.finish(); return true;
     }
     public void commitComposition() {
         if (editor == null || composing.isEmpty()) return;
-        if (editor.commit(composing)) { composing = ""; editor.finish(); }
+        if (editor.commit(preview.isEmpty() ? composing : preview)) {
+            composing = ""; preview = ""; revision++; editor.finish();
+        }
     }
     public void space() {
         if (editor == null) return;
@@ -85,10 +115,10 @@ public final class InputSession {
     }
     public void selectionMovedOutsideComposition() {
         if (editor != null && !composing.isEmpty()) editor.finish();
-        composing = "";
+        composing = ""; preview = ""; shifted = false; revision++;
     }
     public void finish() {
         if (editor != null) editor.finish();
-        composing = ""; shifted = false; editor = null;
+        composing = ""; preview = ""; shifted = false; editor = null; revision++;
     }
 }

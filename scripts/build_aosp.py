@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import xml.etree.ElementTree as ET
 import zipfile
+from project_version import VERSION_CODE, VERSION_NAME
 
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / ".build-cache/aosp-tools"
@@ -78,21 +79,21 @@ def main():
     run([aapt, "compile", "--dir", ROOT / "app/src/main/res", "-o", build / "resources.zip"])
     run([aapt, "link", "-o", build / "base.apk", "--manifest", staged, "-I", android,
          "--java", build / "generated", "-A", ROOT / "app/src/main/assets",
-         "--min-sdk-version", "26", "--target-sdk-version", "35", "--version-code", "1",
-         "--version-name", "0.1.0", "--debug-mode", build / "resources.zip"])
+         "--min-sdk-version", "26", "--target-sdk-version", "35", "--version-code", str(VERSION_CODE),
+         "--version-name", VERSION_NAME, build / "resources.zip"])
     sources = sorted((ROOT / "app/src/main/java").rglob("*.java")) + sorted((build / "generated").rglob("*.java"))
     run([jdk_tool("javac"), "--release", "8", "-encoding", "UTF-8", "-cp", android,
          "-d", build / "classes", *sources])
     run([jdk_tool("jar"), "cf", build / "app-classes.jar", "-C", build / "classes", "."])
     run([jdk_tool("java"), "-cp", CACHE / "r8.jar", "com.android.tools.r8.D8", "--debug",
          "--min-api", "26", "--lib", android, "--output", build / "dex", build / "app-classes.jar"])
-    apk = ROOT / "dist/offline-kana-keyboard-0.1.0-debug-unsigned.apk"
+    apk = ROOT / ("dist/offline-kana-keyboard-" + VERSION_NAME + "-trial-unsigned.apk")
     shutil.copyfile(build / "base.apk", apk)
     with zipfile.ZipFile(apk, "a", compression=zipfile.ZIP_DEFLATED) as archive:
         for dex in sorted((build / "dex").glob("*.dex")):
             archive.write(dex, dex.name)
     run(["python3", "scripts/audit_apk.py", apk])
-    print("PASS: unsigned debug APK:", apk)
+    print("PASS: unsigned non-debuggable trial APK:", apk)
     print("SHA-256:", hashlib.sha256(apk.read_bytes()).hexdigest())
     print("Signing and device runtime verification are separate; no signing identity was created.")
 
